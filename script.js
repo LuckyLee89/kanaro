@@ -11,11 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // ==== Supabase (só usado no submit) ====
-  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-  const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';
+  // ==== Supabase (inicialização segura) ====
+  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';   // <- sua URL
+  const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';    // <- SUA ANON KEY
   const STORAGE_BUCKET = 'assinaturas';
-  const supabase = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) || null;
+  let supabase = null;
+  try {
+    const urlOk = /^https?:\/\//.test(SUPABASE_URL) && !/COLOQUE/i.test(SUPABASE_URL);
+    const keyOk = SUPABASE_ANON_KEY && !/COLOQUE/i.test(SUPABASE_ANON_KEY);
+    if (urlOk && keyOk && window.supabase?.createClient) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } else {
+      console.warn('Supabase não configurado (rodando sem backend por enquanto).');
+    }
+  } catch (e) {
+    console.error('Erro ao iniciar Supabase:', e);
+    supabase = null;
+  }
 
   // ==== elementos obrigatórios ====
   const form = document.getElementById('termoForm');
@@ -34,9 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let drawing = false;
   let hasSignature = false;
 
-  // Garantir que o canvas tenha dimensões internas iguais às dimensões CSS
   function sizeCanvasToCSS() {
-    // garante display:block pra não ter largura 0 em alguns temas
     canvas.style.display = 'block';
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(1, Math.floor(rect.width));
@@ -45,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
       canvas.width = w;
       canvas.height = h;
     }
-    // fundo branco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = '#111827';
@@ -57,17 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    // pointer/mouse/touch unificados
     const clientX = e.touches ? e.touches[0].clientX : (e.clientX ?? 0);
     const clientY = e.touches ? e.touches[0].clientY : (e.clientY ?? 0);
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
+    return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
   function startDraw(e) {
-    // evita arrastar/scroll em mobile
     e.preventDefault?.();
     drawing = true;
     const { x, y } = getPos(e);
@@ -88,22 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatus('Assinatura registrada no quadro.');
   }
 
-  // bloquear gesto de rolagem sobre o canvas
   canvas.style.touchAction = 'none';
-
-  // Pointer Events (Chrome/Android/iOS/desktop)
   canvas.addEventListener('pointerdown', startDraw);
   canvas.addEventListener('pointermove', moveDraw);
   canvas.addEventListener('pointerup', endDraw);
   canvas.addEventListener('pointerleave', endDraw);
   canvas.addEventListener('pointercancel', endDraw);
-
-  // Fallback mouse
   canvas.addEventListener('mousedown', startDraw);
   window.addEventListener('mousemove', moveDraw);
   window.addEventListener('mouseup', endDraw);
-
-  // Fallback touch
   canvas.addEventListener('touchstart', startDraw, { passive: false });
   canvas.addEventListener('touchmove', moveDraw, { passive: false });
   canvas.addEventListener('touchend', endDraw);
@@ -126,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (radios.length) {
     radios.forEach(r => r.addEventListener('change', () => {
       sigMode = r.value === 'type' ? 'type' : 'draw';
-      // limpa o quadro ao mudar de modo
       sizeCanvasToCSS();
       if (typedBox) typedBox.classList.toggle('hidden', sigMode !== 'type');
     }));
@@ -209,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const blob = await dataURLToBlob(pngDataUrl);
       const filePath = `${id}.png`;
       const { error: upErr } = await supabase.storage
-        .from('assinaturas')
+        .from(STORAGE_BUCKET)
         .upload(filePath, blob, { contentType: 'image/png', upsert: false });
       if (upErr) throw upErr;
 
