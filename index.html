@@ -53,11 +53,11 @@
       } else if (j.status === 'REGISTERED_NOT_SIGNED') {
         // tem cadastro → preenche o form
         sessionStorage.setItem('prefill', JSON.stringify(j.data));
-        window.location.href = 'index.html';
+        window.location.href = 'termo.html';
       } else {
         // NEW → só manda o CPF para já aparecer no form
         sessionStorage.setItem('prefill', JSON.stringify({ cpf: cpfDigits }));
-        window.location.href = 'index.html';
+        window.location.href = 'termo.html';
       }
     } catch (e) {
       console.error(e);
