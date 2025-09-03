@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
       setWithMask('condicoes_saude', pre.condicoes_saude);
       setWithMask('medicamentos', pre.medicamentos);
       setWithMask('alergias', pre.alergias);
+      // garante que o valor renderizado está sincronizado
+      cpfMask?.updateValue();
+      telMask?.updateValue();
+      eTelMask?.updateValue();
+      rgMask?.updateValue();
+
 
       // <input type="date"> espera yyyy-mm-dd
       let d = pre.cerimonia_data || '';
@@ -87,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------------- Supabase ----------------
   const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-  const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI'; // <<< coloque a sua anon key
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcm9xcmxyd3R2eWx4ZWNibWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MTczNzAsImV4cCI6MjA3MjQ5MzM3MH0.rVcZSuHJAeC505Mra7oecZtK3ovzUhj-nfamFJ7XRhc'; // <<< coloque a sua anon key
   const STORAGE_BUCKET = 'assinaturas';
 
   let supabase = null;
@@ -336,9 +342,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // limpa e redireciona
       form.reset();
+      cpfMask?.updateValue();
+      telMask?.updateValue();
+      eTelMask?.updateValue();
+      rgMask?.updateValue();
       sessionStorage.removeItem('prefill');
       sizeCanvasToCSS();
       setTimeout(() => { window.location.href = 'sucesso.html'; }, 500);
+
 
     } catch (err) {
       console.error(err);
