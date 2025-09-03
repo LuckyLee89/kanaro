@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+}
+
+
+function formToJSON(form) {
+const fd = new FormData(form);
+const obj = {};
+for (const [k, v] of fd.entries()) obj[k] = v;
+obj.aceitou_termo = !!fd.get('aceitou_termo');
+obj.consentiu_lgpd = !!fd.get('consentiu_lgpd');
+return obj;
+}
+
+
+// ===== SUBMISSÃO =====
+const form = document.getElementById('termoForm');
+const btn = document.getElementById('submitBtn');
+
+
+form.addEventListener('submit', async (e) => {
+e.preventDefault();
+setStatus('Validando…');
+
+
+if (!supabase) {
+setStatus('Supabase não configurado. Edite o arquivo e preencha as chaves.', false);
+return;
+}
+
+
+if (!hasSignature) {
+setStatus('Por favor, assine no quadro antes de enviar.', false);
+return;
+}
+
+
+const data = formToJSON(form);
+if (!data.nome || !data.cpf || !data.data_nascimento || !data.email || !data.telefone) {
+setStatus('Preencha os campos obrigatórios (nome, CPF, nascimento, e-mail, telefone).', false);
+return;
+}
+
+
+btn.disabled = true;
+setStatus('Enviando… aguarde.');
+
+
+try {
+const id = crypto.randomUUID();
+
+
+// 1) Upload da assinatura (PNG) no Storage
+const pngDataUrl = canvas.toDataURL('image/png');
+const blob = await dataURLToBlob(pngDataUrl);
+const filePath = `${id}.png`;
+
+
+const { error: upErr } = await supabase.storage
+.from(STORAGE_BUCKET)
+.upload(filePath, blob, { contentType: 'image/png', upsert: false });
+if (upErr) throw upErr;
+
+
+const { data: publicURLData } = supabase.storage
+.from(STORAGE_BUCKET)
+.getPublicUrl(filePath); // bucket é privado; usamos apenas a URL assinada em contexto interno, mas guardar o path basta.
+
+
+// 2) Insert na tabela
+const payload = {
+id, // opcional: deixar supabase gerar
+nome: data.nome,
+cpf: data.cpf,
+rg: data.rg || null,
+data_nascimento: data.data_nascimento || null,
+email: data.email,
+telefone: data.telefone,
+emergencia_nome: data.emergencia_nome || null,
+emergencia_telefone: data.emergencia_telefone || null,
+condicoes_saude: data.condicoes_saude || null,
+medicamentos: data.medicamentos || null,
+alergias: data.alergias || null,
+cerimonia_data: data.cerimonia_data || null,
+cerimonia_local: data.cerimonia_local || null,
+aceitou_termo: !!data.aceitou_termo,
+consentiu_lgpd: !!data.consentiu_lgpd,
+assinatura_url: filePath // guardamos o caminho no bucket
+};
+
+
+const { error: insErr } = await supabase
+.from('termos_assinados')
+.insert(payload);
+if (insErr) throw insErr;
+
+
+setStatus('Assinado e enviado com sucesso! Obrigado(a).');
+form.reset();
+clearSignature();
+} catch (err) {
+console.error(err);
+setStatus('Falha ao enviar. Verifique a conexão e as políticas do Supabase.', false);
+} finally {
+btn.disabled = false;
+}
+});
+</script>
+</body>
+</html>
