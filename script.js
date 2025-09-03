@@ -265,6 +265,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // normaliza CPF para só dígitos
       const cpfDigits = String(data.cpf).replace(/\D/g, '');
+      
+      // upsert no participantes (se já existir CPF, atualiza)
+      const participante = {
+        cpf: cpfDigits,
+        nome: data.nome,
+        rg: data.rg || null,
+        data_nascimento: data.data_nascimento || null,
+        email: data.email,
+        telefone: data.telefone,
+        emergencia_nome: data.emergencia_nome || null,
+        emergencia_telefone: data.emergencia_telefone || null,
+        condicoes_saude: data.condicoes_saude || null,
+        medicamentos: data.medicamentos || null,
+        alergias: data.alergias || null
+      };
+      
+      const { error: upErr } = await supabase
+        .from('participantes')
+        .upsert(participante, { onConflict: ['cpf'] });
+      
+      if (upErr) throw upErr;
+      
 
       // insert no termos_assinados
       const payload = {
