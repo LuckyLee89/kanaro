@@ -27,34 +27,34 @@ document.addEventListener('DOMContentLoaded', () => {
   if (telInput)  IMask(telInput,  { mask: '(00) 00000-0000' });
   if (eTelInput) IMask(eTelInput, { mask: '(00) 00000-0000' });
 
-  // ---------------- PREFILL (executa bem cedo) ----------------
+  // PREFILL (executa cedo!)
   try {
     const pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
     if (pre) {
       const set = (name, val) => {
         const el = document.querySelector(`[name="${name}"]`);
-        if (el != null && (val || val === 0)) el.value = val;
+        if (el && (val || val === 0)) {
+          if (el._imask) {
+            el._imask.typedValue = val; // usa máscara se existir
+          } else {
+            el.value = val;             // fallback normal
+          }
+        }
       };
-
-      // CPF: se tem IMask, usa unmaskedValue para formatar
-      if (pre.cpf) {
-        const cpfEl = document.querySelector('input[name="cpf"]');
-        if (cpfEl?._imask) cpfEl._imask.unmaskedValue = pre.cpf;
-        else set('cpf', pre.cpf);
-      }
-
+  
+      set('cpf', pre.cpf);
+      set('telefone', pre.telefone);
+      set('emergencia_telefone', pre.emergencia_telefone);
       set('nome', pre.nome);
       set('rg', pre.rg);
-      set('data_nascimento', pre.data_nascimento); // YYYY-MM-DD
+      set('data_nascimento', pre.data_nascimento);
       set('email', pre.email);
-      set('telefone', pre.telefone);
       set('emergencia_nome', pre.emergencia_nome);
-      set('emergencia_telefone', pre.emergencia_telefone);
       set('condicoes_saude', pre.condicoes_saude);
       set('medicamentos', pre.medicamentos);
       set('alergias', pre.alergias);
-
-      // garante formato yyyy-mm-dd no input date
+  
+      // garante formato da data do <input type="date">
       let d = pre.cerimonia_data || '';
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
         const [dd, mm, yyyy] = d.split('/');
@@ -66,20 +66,21 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch (e) {
     console.warn('Prefill inválido', e);
   }
-
-  // ---------------- Supabase ----------------
-  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-  const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI'; // use a sua
-  const STORAGE_BUCKET = 'assinaturas';
-
-  let supabase = null;
-  try {
-    if (window.supabase?.createClient) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  
+    // ---------------- Supabase ----------------
+    const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
+    const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI'; // use a sua
+    const STORAGE_BUCKET = 'assinaturas';
+  
+    let supabase = null;
+    try {
+      if (window.supabase?.createClient) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.error('Erro ao iniciar Supabase:', e);
     }
-  } catch (e) {
-    console.error('Erro ao iniciar Supabase:', e);
-  }
 
   // ---------------- elementos do form ----------------
   const form     = document.getElementById('termoForm');
