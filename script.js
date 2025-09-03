@@ -1,3 +1,4 @@
+// script.js — versão sem ANON KEY (usa Edge Function submit_termo)
 document.addEventListener('DOMContentLoaded', () => {
   // ---------------- status + ano ----------------
   const statusEl = document.getElementById('status');
@@ -9,52 +10,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  // ---------------- máscaras ----------------
   const cpfInput  = document.querySelector('input[name="cpf"]');
   const rgInput   = document.querySelector('input[name="rg"]');
   const telInput  = document.querySelector('input[name="telefone"]');
   const eTelInput = document.querySelector('input[name="emergencia_telefone"]');
-  
+
   const cpfMask  = cpfInput  ? IMask(cpfInput,  { mask: '000.000.000-00' }) : null;
-  const rgMask   = rgInput   ? IMask(rgInput,   {
-    mask: '00.000.000-A',
-    definitions: { A: /[0-9Xx]/ },
-    prepare: s => s.toUpperCase()
-  }) : null;
+  const rgMask   = rgInput   ? IMask(rgInput,   { mask: '00.000.000-A', definitions: { A: /[0-9Xx]/ }, prepare: s => s.toUpperCase() }) : null;
   const telMask  = telInput  ? IMask(telInput,  { mask: '(00) 00000-0000' }) : null;
   const eTelMask = eTelInput ? IMask(eTelInput, { mask: '(00) 00000-0000' }) : null;
 
-  
-  // 2) Helper robusto: funciona com IMask v6/v7
-  const getMask = (el) => (el?.imaskRef || el?._imask || null);
-  
+  // Helper para setar com máscara (IMask v6/v7)
   const setWithMask = (name, val) => {
     const el = document.querySelector(`[name="${name}"]`);
     if (!el || val === undefined || val === null || val === '') return;
-  
     const v = String(val);
-  
-    if (name === 'cpf' && cpfMask) {
-      cpfMask.unmaskedValue = v.replace(/\D/g, '');
-      return;
-    }
-    if (name === 'telefone' && telMask) {
-      telMask.unmaskedValue = v.replace(/\D/g, '');
-      return;
-    }
-    if (name === 'emergencia_telefone' && eTelMask) {
-      eTelMask.unmaskedValue = v.replace(/\D/g, '');
-      return;
-    }
-    if (name === 'rg' && rgMask) {
-      rgMask.unmaskedValue = v.replace(/[^0-9X]/gi, '').toUpperCase();
-      return;
-    }
-  
-    // inputs sem máscara ou datas/emails/etc
-    el.value = v;
+
+    if (name === 'cpf' && cpfMask)               { cpfMask.unmaskedValue = v.replace(/\D/g, ''); return; }
+    if (name === 'telefone' && telMask)          { telMask.unmaskedValue = v.replace(/\D/g, ''); return; }
+    if (name === 'emergencia_telefone' && eTelMask){ eTelMask.unmaskedValue = v.replace(/\D/g, ''); return; }
+    if (name === 'rg' && rgMask)                 { rgMask.unmaskedValue = v.replace(/[^0-9X]/gi, '').toUpperCase(); return; }
+    el.value = v; // sem máscara (email, texto, textarea, date já em yyyy-mm-dd)
   };
-
-
 
   // ---------------- PREFILL (executa cedo) ----------------
   try {
@@ -71,12 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setWithMask('condicoes_saude', pre.condicoes_saude);
       setWithMask('medicamentos', pre.medicamentos);
       setWithMask('alergias', pre.alergias);
-      // garante que o valor renderizado está sincronizado
-      cpfMask?.updateValue();
-      telMask?.updateValue();
-      eTelMask?.updateValue();
-      rgMask?.updateValue();
-
 
       // <input type="date"> espera yyyy-mm-dd
       let d = pre.cerimonia_data || '';
@@ -86,23 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       setWithMask('cerimonia_data', d);
       setWithMask('cerimonia_local', pre.cerimonia_local || '');
+
+      // garante render sincronizado
+      cpfMask?.updateValue(); telMask?.updateValue(); eTelMask?.updateValue(); rgMask?.updateValue();
     }
   } catch (e) {
     console.warn('Prefill inválido', e);
-  }
-
-  // ---------------- Supabase ----------------
-  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcm9xcmxyd3R2eWx4ZWNibWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MTczNzAsImV4cCI6MjA3MjQ5MzM3MH0.rVcZSuHJAeC505Mra7oecZtK3ovzUhj-nfamFJ7XRhc'; // <<< coloque a sua anon key
-  const STORAGE_BUCKET = 'assinaturas';
-
-  let supabase = null;
-  try {
-    if (window.supabase?.createClient) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-  } catch (e) {
-    console.error('Erro ao iniciar Supabase:', e);
   }
 
   // ---------------- elementos do form ----------------
@@ -122,10 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(1, Math.floor(rect.width));
     const h = Math.max(1, Math.floor(rect.height));
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = '#111827';
@@ -151,17 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
     hasSignature = true;
     setStatus('Desenhando…');
   }
-  function moveDraw(e) {
-    if (!drawing) return;
-    e.preventDefault?.();
-    const { x, y } = getPos(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  }
-  function endDraw() {
-    drawing = false;
-    setStatus('Assinatura registrada no quadro.');
-  }
+  function moveDraw(e) { if (!drawing) return; e.preventDefault?.(); const { x, y } = getPos(e); ctx.lineTo(x, y); ctx.stroke(); }
+  function endDraw() { drawing = false; setStatus('Assinatura registrada no quadro.'); }
 
   canvas.style.touchAction = 'none';
   canvas.addEventListener('pointerdown', startDraw);
@@ -176,11 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   canvas.addEventListener('touchmove', moveDraw, { passive: false });
   canvas.addEventListener('touchend', endDraw);
 
-  clearBtn.addEventListener('click', () => {
-    sizeCanvasToCSS();
-    setStatus('Quadro limpo.');
-  });
-
+  clearBtn.addEventListener('click', () => { sizeCanvasToCSS(); setStatus('Quadro limpo.'); });
   window.addEventListener('resize', sizeCanvasToCSS);
   sizeCanvasToCSS();
 
@@ -213,11 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
       hasSignature = true;
       setStatus('Assinatura gerada a partir do nome.');
     };
-    if (document.fonts?.load) {
-      document.fonts.load(`${size}px "Pacifico"`).then(drawNow).catch(drawNow);
-    } else drawNow();
+    if (document.fonts?.load) document.fonts.load(`${size}px "Pacifico"`).then(drawNow).catch(drawNow);
+    else drawNow();
   }
-
   if (makeSigBtn && typedName) {
     makeSigBtn.addEventListener('click', () => {
       const name = typedName.value.trim();
@@ -235,20 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
     obj.consentiu_lgpd = !!fd.get('consentiu_lgpd');
     return obj;
   }
-  async function dataURLToBlob(dataURL) {
-    const res = await fetch(dataURL);
-    return await res.blob();
-  }
 
-  // ---------------- SUBMIT ----------------
+  // ---------------- SUBMIT (chama Edge Function) ----------------
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     setStatus('Validando…');
 
-    if (!supabase) {
-      setStatus('Supabase não configurado. Verifique URL/KEY no script.js.', false);
-      return;
-    }
     if (sigMode === 'type' && typedName && !typedName.value.trim()) {
       setStatus('Digite o nome e clique em "Gerar assinatura".', false);
       return;
@@ -259,10 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const data = formToJSON(form);
-    if (!data.cerimonia_data) {
-      setStatus('Informe a data da cerimônia.', false);
-      return;
-    }
+    if (!data.cerimonia_data) { setStatus('Informe a data da cerimônia.', false); return; }
     if (!data.nome || !data.cpf || !data.data_nascimento || !data.email || !data.telefone) {
       setStatus('Preencha os campos obrigatórios (nome, CPF, nascimento, e-mail, telefone).', false);
       return;
@@ -272,23 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatus('Enviando…');
 
     try {
-      const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-      // upload assinatura
+      // 1) PNG base64 da assinatura
       const pngDataUrl = canvas.toDataURL('image/png');
-      const blob = await dataURLToBlob(pngDataUrl);
-      const filePath = `${id}.png`;
 
-      const uploadRes = await supabase
-        .storage.from(STORAGE_BUCKET)
-        .upload(filePath, blob, { contentType: 'image/png', upsert: false });
-
-      if (uploadRes.error) throw uploadRes.error;
-
-      // normaliza CPF para só dígitos
+      // 2) normaliza CPF e monta objetos
       const cpfDigits = String(data.cpf).replace(/\D/g, '');
-
-      // upsert no participantes
       const participante = {
         cpf: cpfDigits,
         nome: data.nome,
@@ -302,58 +222,40 @@ document.addEventListener('DOMContentLoaded', () => {
         medicamentos: data.medicamentos || null,
         alergias: data.alergias || null
       };
-
-      const upsertRes = await supabase
-        .from('participantes')
-        .upsert(participante, { onConflict: ['cpf'] });
-
-      if (upsertRes.error) throw upsertRes.error;
-
-      // insert no termos_assinados
-      const payload = {
-        id,
-        nome: data.nome,
-        cpf: cpfDigits,
-        rg: data.rg || null,
-        data_nascimento: data.data_nascimento || null,
-        email: data.email,
-        telefone: data.telefone,
-        emergencia_nome: data.emergencia_nome || null,
-        emergencia_telefone: data.emergencia_telefone || null,
-        condicoes_saude: data.condicoes_saude || null,
-        medicamentos: data.medicamentos || null,
-        alergias: data.alergias || null,
-        cerimonia_data: data.cerimonia_data || null,
+      const termo = {
+        cerimonia_data: data.cerimonia_data,
         cerimonia_local: data.cerimonia_local || null,
         aceitou_termo: !!data.aceitou_termo,
         consentiu_lgpd: !!data.consentiu_lgpd,
-        assinatura_url: filePath,
-        signature_type: sigMode,
-        signed_at: new Date().toISOString()
+        signature_type: sigMode
       };
 
-      const insertRes = await supabase
-        .from('termos_assinados')
-        .insert(payload);
-
-      if (insertRes.error) throw insertRes.error;
+      // 3) chama a função
+      const FN_SUBMIT = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/submit_termo';
+      const resp = await fetch(FN_SUBMIT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          participante,
+          termo,
+          assinatura_png_base64: pngDataUrl
+        })
+      });
+      const j = await resp.json();
+      if (!resp.ok || !j.ok) throw new Error(j.error || 'Falha ao enviar');
 
       setStatus('Assinado e enviado com sucesso! Redirecionando…');
 
-      // limpa e redireciona
+      // limpar e redirecionar
       form.reset();
-      cpfMask?.updateValue();
-      telMask?.updateValue();
-      eTelMask?.updateValue();
-      rgMask?.updateValue();
+      cpfMask?.updateValue(); telMask?.updateValue(); eTelMask?.updateValue(); rgMask?.updateValue();
       sessionStorage.removeItem('prefill');
       sizeCanvasToCSS();
       setTimeout(() => { window.location.href = 'sucesso.html'; }, 500);
 
-
     } catch (err) {
       console.error(err);
-      setStatus('Falha ao enviar. Verifique conexão, RLS e policies do Supabase.', false);
+      setStatus('Falha ao enviar. Tente novamente.', false);
     } finally {
       btn.disabled = false;
     }
