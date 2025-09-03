@@ -178,7 +178,7 @@
     (function () {
       try {
         const raw = sessionStorage.getItem('prefill');
-        if (!raw) return location.replace('termo.html');
+        if (!raw) return location.replace('index.html');
   
         const pre = JSON.parse(raw);
         // validade de 30 minutos para evitar abrir o termo “antigo” em outra aba
