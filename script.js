@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ==== Supabase (inicialização segura) ====
   const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';   // <- sua URL
-  const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';    // <- SUA ANON KEY
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcm9xcmxyd3R2eWx4ZWNibWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MTczNzAsImV4cCI6MjA3MjQ5MzM3MH0.rVcZSuHJAeC505Mra7oecZtK3ovzUhj-nfamFJ7XRhc';    // <- SUA ANON KEY
   const STORAGE_BUCKET = 'assinaturas';
   let supabase = null;
   try {
