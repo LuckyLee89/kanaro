@@ -62,16 +62,17 @@
         // base para o prefill
         const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now() };
 
-        if (j.status === 'SIGNED_FOR_DATE') {
-          // já assinou para esta data
-          window.location.href = new URL('./ja-assinou.html', window.location.href).href;
+         if (j.status === 'SIGNED_FOR_DATE') {
+          window.location.href = 'ja-assinou.html';
           return;
         }
-
-        // se tiver cadastro, mistura dados; senão, só CPF + data
+        
         const prefill = j.status === 'REGISTERED_NOT_SIGNED'
           ? { ...j.data, ...basePrefill }
           : basePrefill;
+        
+        sessionStorage.setItem('prefill', JSON.stringify(prefill));
+        window.location.href = 'termo.html';
 
         sessionStorage.setItem('prefill', JSON.stringify(prefill));
         window.location.href = new URL('./termo.html', window.location.href).href;
