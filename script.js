@@ -1,40 +1,51 @@
-// ============== BOOT SEGURO ==============
 document.addEventListener('DOMContentLoaded', () => {
-  // ano no rodapé (se existir)
+  // ==== util (status) ====
+  const statusEl = document.getElementById('status');
+  const setStatus = (msg, ok = true) => {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-rose-700';
+  };
+
+  // ano no rodapé
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // ===== CONFIG SUPABASE =====
+  // ==== Supabase (só usado no submit) ====
   const SUPABASE_URL = 'COLOQUE_AQUI_SUA_SUPABASE_URL';
   const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';
   const STORAGE_BUCKET = 'assinaturas';
+  const supabase = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) || null;
 
-  const supabase =
-    window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) || null;
-
-  // ===== ELEMENTOS OBRIGATÓRIOS =====
+  // ==== elementos obrigatórios ====
   const form = document.getElementById('termoForm');
-  const statusEl = document.getElementById('status');
   const btn = document.getElementById('submitBtn');
   const canvas = document.getElementById('signature');
   const clearBtn = document.getElementById('clearSig');
 
-  if (!form || !canvas || !btn || !statusEl || !clearBtn) {
-    console.error('IDs obrigatórios não encontrados no HTML.');
+  if (!form || !btn || !canvas || !clearBtn) {
+    console.error('IDs obrigatórios ausentes (termoForm, submitBtn, signature, clearSig).');
+    setStatus('Erro: elementos do formulário não encontrados.', false);
     return;
   }
 
-  // ===== CANVAS =====
+  // ==== canvas setup ====
   const ctx = canvas.getContext('2d');
   let drawing = false;
   let hasSignature = false;
 
-  function setStatus(msg, ok = true) {
-    statusEl.textContent = msg;
-    statusEl.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-rose-700';
-  }
-
-  function clearSignature() {
+  // Garantir que o canvas tenha dimensões internas iguais às dimensões CSS
+  function sizeCanvasToCSS() {
+    // garante display:block pra não ter largura 0 em alguns temas
+    canvas.style.display = 'block';
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.floor(rect.width));
+    const h = Math.max(1, Math.floor(rect.height));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    // fundo branco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = '#111827';
@@ -44,32 +55,86 @@ document.addEventListener('DOMContentLoaded', () => {
     hasSignature = false;
   }
 
-  function resizeCanvas() {
-    const w = canvas.offsetWidth || canvas.clientWidth || 800;
-    const h = canvas.offsetHeight || canvas.clientHeight || 200;
-    canvas.width = w;
-    canvas.height = h;
-    clearSignature();
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    // pointer/mouse/touch unificados
+    const clientX = e.touches ? e.touches[0].clientX : (e.clientX ?? 0);
+    const clientY = e.touches ? e.touches[0].clientY : (e.clientY ?? 0);
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
   }
 
+  function startDraw(e) {
+    // evita arrastar/scroll em mobile
+    e.preventDefault?.();
+    drawing = true;
+    const { x, y } = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    hasSignature = true;
+    setStatus('Desenhando…');
+  }
+  function moveDraw(e) {
+    if (!drawing) return;
+    e.preventDefault?.();
+    const { x, y } = getPos(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  function endDraw() {
+    drawing = false;
+    setStatus('Assinatura registrada no quadro.');
+  }
+
+  // bloquear gesto de rolagem sobre o canvas
   canvas.style.touchAction = 'none';
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
 
-  // ===== MODO: DESENHAR / DIGITAR =====
-  // Esses elementos são opcionais. Se não existirem, ficamos no modo "draw".
+  // Pointer Events (Chrome/Android/iOS/desktop)
+  canvas.addEventListener('pointerdown', startDraw);
+  canvas.addEventListener('pointermove', moveDraw);
+  canvas.addEventListener('pointerup', endDraw);
+  canvas.addEventListener('pointerleave', endDraw);
+  canvas.addEventListener('pointercancel', endDraw);
+
+  // Fallback mouse
+  canvas.addEventListener('mousedown', startDraw);
+  window.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+
+  // Fallback touch
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', moveDraw, { passive: false });
+  canvas.addEventListener('touchend', endDraw);
+
+  clearBtn.addEventListener('click', () => {
+    sizeCanvasToCSS();
+    setStatus('Quadro limpo.');
+  });
+
+  window.addEventListener('resize', sizeCanvasToCSS);
+  sizeCanvasToCSS();
+
+  // ===== assinatura digitada (opcional) =====
   let sigMode = 'draw';
-  const modeRadios = document.querySelectorAll('input[name="sigMode"]');
-  const typedBox = document.getElementById('typedBox') || null;
-  const typedName = document.getElementById('typedName') || null;
-  const makeSigBtn = document.getElementById('makeSigBtn') || null;
+  const radios = document.querySelectorAll('input[name="sigMode"]');
+  const typedBox = document.getElementById('typedBox');
+  const typedName = document.getElementById('typedName');
+  const makeSigBtn = document.getElementById('makeSigBtn');
 
-  function drawTypedSignature(name) {
+  if (radios.length) {
+    radios.forEach(r => r.addEventListener('change', () => {
+      sigMode = r.value === 'type' ? 'type' : 'draw';
+      // limpa o quadro ao mudar de modo
+      sizeCanvasToCSS();
+      if (typedBox) typedBox.classList.toggle('hidden', sigMode !== 'type');
+    }));
+  }
+
+  function drawTyped(name) {
     if (!name) return;
-    // fundo branco
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    sizeCanvasToCSS();
     const size = Math.max(24, Math.floor(canvas.height * 0.5));
     const fontStack = `"Pacifico", "Allura", cursive`;
     const drawNow = () => {
@@ -79,94 +144,49 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.font = `${size}px ${fontStack}`;
       ctx.fillText(name, canvas.width / 2, canvas.height / 2);
       hasSignature = true;
+      setStatus('Assinatura gerada a partir do nome.');
     };
     if (document.fonts?.load) {
       document.fonts.load(`${size}px "Pacifico"`).then(drawNow).catch(drawNow);
-    } else {
-      drawNow();
-    }
-  }
-
-  // ativa/desativa modo se existirem os radios
-  if (modeRadios.length) {
-    modeRadios.forEach(r => {
-      r.addEventListener('change', () => {
-        sigMode = r.value === 'type' ? 'type' : 'draw';
-        clearSignature();
-        if (typedBox) typedBox.classList.toggle('hidden', sigMode !== 'type');
-      });
-    });
+    } else drawNow();
   }
 
   if (makeSigBtn && typedName) {
     makeSigBtn.addEventListener('click', () => {
       const name = typedName.value.trim();
-      if (!name) {
-        alert('Digite seu nome completo.');
-        return;
-      }
-      drawTypedSignature(name);
+      if (!name) return alert('Digite seu nome completo.');
+      drawTyped(name);
     });
   }
 
-  // ===== Desenho livre (sempre disponível) =====
-  canvas.addEventListener('pointerdown', (e) => {
-    if (sigMode !== 'draw') return;
-    drawing = true;
-    ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
-    canvas.setPointerCapture?.(e.pointerId);
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (sigMode !== 'draw' || !drawing) return;
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-    hasSignature = true;
-  });
-  ['pointerup','pointerleave','pointercancel'].forEach(ev => {
-    canvas.addEventListener(ev, (e) => {
-      if (sigMode !== 'draw') return;
-      drawing = false;
-      canvas.releasePointerCapture?.(e.pointerId);
-    });
-  });
-
-  clearBtn.addEventListener('click', clearSignature);
-
-  // ===== UTIL =====
-  async function dataURLToBlob(dataURL) {
-    const res = await fetch(dataURL);
-    return await res.blob();
-  }
-  function formToJSON(formEl) {
-    const fd = new FormData(formEl);
+  // ===== util submit =====
+  function formToJSON(el) {
+    const fd = new FormData(el);
     const obj = {};
     for (const [k, v] of fd.entries()) obj[k] = v;
     obj.aceitou_termo = !!fd.get('aceitou_termo');
     obj.consentiu_lgpd = !!fd.get('consentiu_lgpd');
     return obj;
   }
+  async function dataURLToBlob(dataURL) {
+    const res = await fetch(dataURL);
+    return await res.blob();
+  }
 
-  // ===== SUBMISSÃO =====
+  // ===== SUBMIT =====
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     setStatus('Validando…');
 
     if (!supabase) {
-      setStatus('Supabase não configurado. Verifique URL/KEY.', false);
+      setStatus('Supabase não configurado. Verifique URL/KEY no script.js.', false);
       return;
     }
 
-    // Se modo type existir e estiver ativo, exigir nome + gerar no canvas se ainda não gerou
-    if (sigMode === 'type' && typedName) {
-      const name = typedName.value.trim();
-      if (!name) {
-        setStatus('Digite o nome e clique em "Gerar assinatura".', false);
-        return;
-      }
-      if (!hasSignature) drawTypedSignature(name);
+    if (sigMode === 'type' && typedName && !typedName.value.trim()) {
+      setStatus('Digite o nome e clique em "Gerar assinatura".', false);
+      return;
     }
-
     if (!hasSignature) {
       setStatus('Por favor, assine (desenho) ou gere a assinatura digitada.', false);
       return;
@@ -179,22 +199,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     btn.disabled = true;
-    setStatus('Enviando… aguarde.');
+    setStatus('Enviando…');
 
     try {
       const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-      // 1) Upload da assinatura (PNG) no Storage
+      // upload assinatura
       const pngDataUrl = canvas.toDataURL('image/png');
       const blob = await dataURLToBlob(pngDataUrl);
       const filePath = `${id}.png`;
-
       const { error: upErr } = await supabase.storage
         .from('assinaturas')
         .upload(filePath, blob, { contentType: 'image/png', upsert: false });
       if (upErr) throw upErr;
 
-      // 2) Insert na tabela
+      // insert
       const payload = {
         id,
         nome: data.nome,
@@ -213,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         aceitou_termo: !!data.aceitou_termo,
         consentiu_lgpd: !!data.consentiu_lgpd,
         assinatura_url: filePath,
-        signature_type: (sigMode === 'type' ? 'type' : 'draw'),
+        signature_type: sigMode,
         signed_at: new Date().toISOString()
       };
 
@@ -222,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setStatus('Assinado e enviado com sucesso! Obrigado(a).');
       form.reset();
-      clearSignature();
+      sizeCanvasToCSS();
       if (typedName) typedName.value = '';
     } catch (err) {
       console.error(err);
