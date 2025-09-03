@@ -30,11 +30,17 @@
     IMask(cpfEl, { mask: '000.000.000-00' });
     // Pré-preenche a data da cerimônia via query string
     const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search);
     const dataPredefinida = params.get("data");
+    
     if (dataPredefinida) {
       dataEl.value = dataPredefinida;
-      dataEl.readOnly = true;
+      dataEl.readOnly = true; // trava o input
     }
+    
+    // na hora do envio:
+    const cerimonia_data = dataPredefinida || dataEl.value;
+    
 
 
 
