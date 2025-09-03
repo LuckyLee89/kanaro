@@ -24,7 +24,7 @@
   IMask(cpfEl, { mask: '000.000.000-00' });
 
   // ⬇️ TROQUE pelo endereço real da sua função edge
-  const FN_URL = 'https://<PROJECT-REF>.functions.supabase.co/lookup_cpf';
+  const FN_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co/functions/v1/lookup_cpf';
 
   document.getElementById('consultar').addEventListener('click', async () => {
     const cpfDigits = cpfEl.value.replace(/\D/g,'');
