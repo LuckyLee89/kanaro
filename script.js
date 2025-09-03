@@ -6,6 +6,12 @@ if (cpfInput) {
   IMask(cpfInput, { mask: '000.000.000-00' });
 }
 
+const rgInput = document.querySelector('input[name="rg"]');
+if (rgInput) {
+  IMask(rgInput, { mask: /^[0-9]{0,9}[A-Za-z]?$/ });
+}
+
+
 const telInput = document.querySelector('input[name="telefone"]');
 if (telInput) {
   IMask(telInput, { mask: '(00) 00000-0000' });
