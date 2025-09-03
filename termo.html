@@ -185,11 +185,11 @@
         const maxAgeMs = 30 * 60 * 1000;
         if (!pre || !pre._ts || (Date.now() - pre._ts) > maxAgeMs) {
           sessionStorage.removeItem('prefill');
-          return location.replace('inicio.html');
+          return location.replace('index.html');
         }
       } catch {
         sessionStorage.removeItem('prefill');
-        location.replace('inicio.html');
+        location.replace('index.html');
       }
     })();
   </script>
