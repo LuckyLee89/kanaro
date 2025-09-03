@@ -1,5 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ==== util (status) ====
+// Máscaras
+const cpfInput = document.querySelector('input[name="cpf"]');
+if (cpfInput) {
+  IMask(cpfInput, { mask: '000.000.000-00' });
+}
+
+const telInput = document.querySelector('input[name="telefone"]');
+if (telInput) {
+  IMask(telInput, { mask: '(00) 00000-0000' });
+}
+
+const emergTelInput = document.querySelector('input[name="emergencia_telefone"]');
+if (emergTelInput) {
+  IMask(emergTelInput, { mask: '(00) 00000-0000' });
+}
+
   const statusEl = document.getElementById('status');
   const setStatus = (msg, ok = true) => {
     if (!statusEl) return;
