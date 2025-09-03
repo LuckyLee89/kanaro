@@ -1,109 +1,396 @@
+<!--
+Site de assinatura digital — Termo de Responsabilidade (Ayahuasca)
+Autor: você ♡  |  Licença: MIT
+
+INSTRUÇÕES RÁPIDAS
+1) Crie um projeto no Supabase e copie as chaves/anotações:
+   - SUPABASE_URL
+   - SUPABASE_ANON_KEY
+2) No Supabase SQL, crie a tabela e políticas (cole o bloco abaixo):
+
+-- TABELA
+create table if not exists public.termos_assinados (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  nome text not null,
+  cpf text not null,
+  rg text,
+  data_nascimento date not null,
+  email text not null,
+  telefone text not null,
+  emergencia_nome text,
+  emergencia_telefone text,
+  condicoes_saude text,
+  medicamentos text,
+  alergias text,
+  cerimonia_data date,
+  cerimonia_local text,
+  aceitou_termo boolean not null,
+  consentiu_lgpd boolean not null,
+  assinatura_url text
+);
+
+-- RLS + POLÍTICAS
+alter table public.termos_assinados enable row level security;
+-- Permitir INSERT anônimo (apenas gravação, sem leitura pública)
+create policy if not exists "insert_anon" on public.termos_assinados
+for insert to anon, authenticated using (true) with check (true);
+-- Bloquear SELECT/UPDATE/DELETE de anônimos
+create policy if not exists "deny_select_anon" on public.termos_assinados
+for select to anon using (false);
+create policy if not exists "deny_update_anon" on public.termos_assinados
+for update to anon using (false) with check (false);
+create policy if not exists "deny_delete_anon" on public.termos_assinados
+for delete to anon using (false);
+
+-- STORAGE: Bucket privado para assinaturas
+-- No Console: Storage > Create bucket: assinaturas (desmarque "Public")
+-- Políticas de upload (permite apenas inserir)
+-- Obs: ajuste o schema se preciso (normalmente storage está no schema 'storage')
+-- GUI: Storage > assinaturas > Policies > New Policy
+--   Name: upload_anon  |  Operation: INSERT  |  Roles: anon, authenticated
+--   USING: (bucket_id = 'assinaturas')
+--   WITH CHECK: (bucket_id = 'assinaturas')
+
+3) Preencha SUPABASE_URL e SUPABASE_ANON_KEY nos campos do script abaixo.
+4) Faça o deploy do arquivo (Vercel/Netlify/GitHub Pages). É só 1 HTML.
+5) Teste o fluxo e valide a gravação no Supabase (tabela e bucket).
+
+DICA: Ative CAPTCHA (Turnstile/ReCAPTCHA) caso queira mitigar spam.
+-->
+
 <!DOCTYPE html>
-}
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Termo de Responsabilidade — Uso Ritual da Ayahuasca</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="icon" href="data:," />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    /* Melhorias de escrita no canvas em telas de alta densidade */
+    #signature { touch-action: none; }
+    .required:after { content: " *"; color: #ef4444; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <main class="max-w-4xl mx-auto p-6 md:p-10">
+    <header class="mb-6 md:mb-8">
+      <h1 class="text-2xl md:text-3xl font-bold">Termo de Responsabilidade — Uso Ritual da Ayahuasca</h1>
+      <p class="text-sm text-gray-600 mt-2">Preencha seus dados, leia o termo e assine digitalmente para confirmar sua participação consciente e informada.</p>
+    </header>
 
+    <!-- Card -->
+    <section class="bg-white shadow-lg rounded-2xl p-6 md:p-8 space-y-8">
+      <!-- ALERTA NÃO JURÍDICO -->
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+        <p class="text-sm"><strong>Aviso:</strong> este modelo é informativo e não substitui orientação jurídica. Considere revisá-lo com um(a) advogado(a) e ajuste-o à sua realidade organizacional.</p>
+      </div>
 
-function formToJSON(form) {
-const fd = new FormData(form);
-const obj = {};
-for (const [k, v] of fd.entries()) obj[k] = v;
-obj.aceitou_termo = !!fd.get('aceitou_termo');
-obj.consentiu_lgpd = !!fd.get('consentiu_lgpd');
-return obj;
-}
+      <form id="termoForm" class="space-y-8">
+        <!-- DADOS PESSOAIS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="required block text-sm font-medium">Nome completo</label>
+            <input name="nome" required class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="required block text-sm font-medium">CPF</label>
+            <input name="cpf" required inputmode="numeric" pattern="[0-9.\-]{11,14}" placeholder="000.000.000-00" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">RG</label>
+            <input name="rg" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="required block text-sm font-medium">Data de nascimento</label>
+            <input type="date" name="data_nascimento" required class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="required block text-sm font-medium">E-mail</label>
+            <input type="email" name="email" required class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="required block text-sm font-medium">Telefone</label>
+            <input name="telefone" required placeholder="(00) 00000-0000" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+        </div>
 
+        <!-- CONTATO DE EMERGÊNCIA -->
+        <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <legend class="text-sm font-semibold text-gray-700 mb-2">Contato de emergência</legend>
+          <div>
+            <label class="block text-sm font-medium">Nome</label>
+            <input name="emergencia_nome" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Telefone</label>
+            <input name="emergencia_telefone" placeholder="(00) 00000-0000" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+        </fieldset>
 
-// ===== SUBMISSÃO =====
-const form = document.getElementById('termoForm');
-const btn = document.getElementById('submitBtn');
+        <!-- SAÚDE -->
+        <div class="space-y-3">
+          <h3 class="text-sm font-semibold">Informações de saúde</h3>
+          <p class="text-xs text-gray-600">Compartilhe apenas o necessário para sua segurança durante o ritual.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium">Condições de saúde relevantes</label>
+              <textarea name="condicoes_saude" rows="3" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Medicamentos em uso</label>
+              <textarea name="medicamentos" rows="3" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Alergias</label>
+              <textarea name="alergias" rows="3" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"></textarea>
+            </div>
+          </div>
+        </div>
 
+        <!-- CERIMÔNIA -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium">Data da cerimônia</label>
+            <input type="date" name="cerimonia_data" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Local</label>
+            <input name="cerimonia_local" placeholder="Ex.: Espaço Kanarô — Ourinhos/SP" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
+          </div>
+        </div>
 
-form.addEventListener('submit', async (e) => {
-e.preventDefault();
-setStatus('Validando…');
+        <!-- TERMO (ROLÁVEL) -->
+        <div>
+          <label class="required block text-sm font-semibold mb-2">Leia com atenção</label>
+          <div class="max-h-64 overflow-y-auto rounded-xl border p-4 text-sm leading-relaxed bg-gray-50" id="termo-texto">
+            <p><strong>Termo de Responsabilidade e Consentimento Informado para Uso Ritual da Ayahuasca</strong></p>
+            <p class="mt-3">Eu, <em>participante identificado neste formulário</em>, declaro que participo <strong>voluntariamente</strong> de cerimônia/ritual conduzido por <em>facilitador(a)/organização</em>, ciente de que a Ayahuasca é uma bebida sacramental utilizada em contextos religiosos/rituais no Brasil. Estou ciente de que seus efeitos podem incluir náuseas, vômitos, evacuação, alterações perceptivas, emocionais e de consciência por algumas horas.</p>
+            <p class="mt-3"><strong>Contraindicações e alertas (não exaustivo):</strong> uso de certos medicamentos (especialmente antidepressivos e outras substâncias com ação serotoninérgica), condições cardíacas graves, histórico de psicose, transtorno bipolar em fase maníaca, epilepsia não controlada, glaucoma, gravidez ou lactação. Comprometo-me a informar de forma <strong>verdadeira</strong> minhas condições de saúde e medicamentos em uso, e a seguir as orientações de preparo (dieta, abstinências) e de segurança fornecidas pela organização.</p>
+            <p class="mt-3"><strong>Responsabilidades:</strong> (i) seguirei as instruções da equipe durante todo o ritual; (ii) não dirigirei veículos nem operarei máquinas sob efeito; (iii) comunicarei imediatamente qualquer mal-estar; (iv) autorizo, se necessário, encaminhamento para atendimento médico e contato com meu(a) responsável/emergência.</p>
+            <p class="mt-3"><strong>Privacidade e LGPD:</strong> autorizo o tratamento dos dados pessoais informados neste formulário para fins de organização, segurança e registro da cerimônia, pelo tempo necessário ao cumprimento dessas finalidades. Sei que posso solicitar acesso, correção ou eliminação dos meus dados, salvo hipóteses legais de retenção.</p>
+            <p class="mt-3"><strong>Declaração final:</strong> Li e compreendi as informações acima, tive oportunidade de tirar dúvidas e <strong>consinto</strong> em participar do ritual de forma livre e informada.</p>
+            <p class="mt-3 text-xs text-gray-600">Observação importante: este documento é um <em>modelo</em> e pode exigir adaptações conforme o contexto religioso/organizacional e a legislação aplicável. Considere submetê-lo à análise jurídica.</p>
+          </div>
+          <div class="mt-3 space-y-2">
+            <label class="inline-flex items-start gap-3 text-sm">
+              <input type="checkbox" name="aceitou_termo" class="mt-1" required />
+              <span>Eu li e <strong>aceito</strong> o Termo de Responsabilidade acima.</span>
+            </label>
+            <label class="inline-flex items-start gap-3 text-sm">
+              <input type="checkbox" name="consentiu_lgpd" class="mt-1" required />
+              <span>Autorizo o tratamento dos meus dados conforme a seção de <strong>Privacidade e LGPD</strong>.</span>
+            </label>
+          </div>
+        </div>
 
+        <!-- ASSINATURA -->
+        <div class="space-y-3">
+          <label class="required block text-sm font-semibold">Assinatura digital</label>
+          <div class="rounded-xl border bg-white p-3">
+            <canvas id="signature" width="800" height="200" class="w-full h-40"></canvas>
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="button" id="clearSig" class="px-3 py-2 rounded-lg border">Limpar</button>
+            <span class="text-xs text-gray-600">Assine com o dedo (celular) ou mouse (computador).</span>
+          </div>
+        </div>
 
-if (!supabase) {
-setStatus('Supabase não configurado. Edite o arquivo e preencha as chaves.', false);
-return;
-}
+        <!-- SUBMIT -->
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <button id="submitBtn" class="inline-flex items-center justify-center rounded-xl bg-black text-white px-5 py-3 font-semibold hover:bg-gray-900 disabled:opacity-50" type="submit">Enviar e Assinar</button>
+          <p id="status" class="text-sm text-gray-700"></p>
+        </div>
+      </form>
+    </section>
 
+    <footer class="text-center text-xs text-gray-500 mt-8">
+      <p>© <span id="year"></span> — Uso ritual, responsabilidade, cuidado e respeito.</p>
+    </footer>
+  </main>
 
-if (!hasSignature) {
-setStatus('Por favor, assine no quadro antes de enviar.', false);
-return;
-}
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
 
+    // ===== CONFIGURE SEU SUPABASE AQUI =====
+    const SUPABASE_URL = 'COLOQUE_AQUI_SUA_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';
+    const STORAGE_BUCKET = 'assinaturas';
 
-const data = formToJSON(form);
-if (!data.nome || !data.cpf || !data.data_nascimento || !data.email || !data.telefone) {
-setStatus('Preencha os campos obrigatórios (nome, CPF, nascimento, e-mail, telefone).', false);
-return;
-}
+    if (SUPABASE_URL.startsWith('COLOQUE') || SUPABASE_ANON_KEY.startsWith('COLOQUE')) {
+      console.warn('Lembre-se de configurar SUPABASE_URL e SUPABASE_ANON_KEY.');
+    }
 
+    const supabase = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-btn.disabled = true;
-setStatus('Enviando… aguarde.');
+    // ===== Assinatura (Canvas) =====
+    const canvas = document.getElementById('signature');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let hasSignature = false;
 
+    // Ajuste de resolução para telas de alta densidade
+    function resizeCanvasForHiDPI() {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      const displayWidth = canvas.clientWidth;
+      const displayHeight = canvas.clientHeight;
+      canvas.width = displayWidth * ratio;
+      canvas.height = displayHeight * ratio;
+      ctx.scale(ratio, ratio);
+      clearSignature();
+    }
 
-try {
-const id = crypto.randomUUID();
+    function clearSignature() {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2;
+      hasSignature = false;
+    }
 
+    window.addEventListener('resize', resizeCanvasForHiDPI);
+    resizeCanvasForHiDPI();
 
-// 1) Upload da assinatura (PNG) no Storage
-const pngDataUrl = canvas.toDataURL('image/png');
-const blob = await dataURLToBlob(pngDataUrl);
-const filePath = `${id}.png`;
+    function pointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      return { x, y };
+    }
 
+    function startDraw(e) {
+      e.preventDefault();
+      drawing = true;
+      const { x, y } = pointerPos(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
 
-const { error: upErr } = await supabase.storage
-.from(STORAGE_BUCKET)
-.upload(filePath, blob, { contentType: 'image/png', upsert: false });
-if (upErr) throw upErr;
+    function draw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const { x, y } = pointerPos(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      hasSignature = true;
+    }
 
+    function endDraw(e) { drawing = false; }
 
-const { data: publicURLData } = supabase.storage
-.from(STORAGE_BUCKET)
-.getPublicUrl(filePath); // bucket é privado; usamos apenas a URL assinada em contexto interno, mas guardar o path basta.
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', endDraw);
 
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
 
-// 2) Insert na tabela
-const payload = {
-id, // opcional: deixar supabase gerar
-nome: data.nome,
-cpf: data.cpf,
-rg: data.rg || null,
-data_nascimento: data.data_nascimento || null,
-email: data.email,
-telefone: data.telefone,
-emergencia_nome: data.emergencia_nome || null,
-emergencia_telefone: data.emergencia_telefone || null,
-condicoes_saude: data.condicoes_saude || null,
-medicamentos: data.medicamentos || null,
-alergias: data.alergias || null,
-cerimonia_data: data.cerimonia_data || null,
-cerimonia_local: data.cerimonia_local || null,
-aceitou_termo: !!data.aceitou_termo,
-consentiu_lgpd: !!data.consentiu_lgpd,
-assinatura_url: filePath // guardamos o caminho no bucket
-};
+    document.getElementById('clearSig').addEventListener('click', clearSignature);
 
+    // ===== Utilidades =====
+    async function dataURLToBlob(dataURL) {
+      const res = await fetch(dataURL);
+      return await res.blob();
+    }
 
-const { error: insErr } = await supabase
-.from('termos_assinados')
-.insert(payload);
-if (insErr) throw insErr;
+    function setStatus(msg, ok = true) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-rose-700';
+    }
 
+    function formToJSON(form) {
+      const fd = new FormData(form);
+      const obj = {};
+      for (const [k, v] of fd.entries()) obj[k] = v;
+      obj.aceitou_termo = !!fd.get('aceitou_termo');
+      obj.consentiu_lgpd = !!fd.get('consentiu_lgpd');
+      return obj;
+    }
 
-setStatus('Assinado e enviado com sucesso! Obrigado(a).');
-form.reset();
-clearSignature();
-} catch (err) {
-console.error(err);
-setStatus('Falha ao enviar. Verifique a conexão e as políticas do Supabase.', false);
-} finally {
-btn.disabled = false;
-}
-});
-</script>
+    // ===== SUBMISSÃO =====
+    const form = document.getElementById('termoForm');
+    const btn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setStatus('Validando…');
+
+      if (!supabase) {
+        setStatus('Supabase não configurado. Edite o arquivo e preencha as chaves.', false);
+        return;
+      }
+
+      if (!hasSignature) {
+        setStatus('Por favor, assine no quadro antes de enviar.', false);
+        return;
+      }
+
+      const data = formToJSON(form);
+      if (!data.nome || !data.cpf || !data.data_nascimento || !data.email || !data.telefone) {
+        setStatus('Preencha os campos obrigatórios (nome, CPF, nascimento, e-mail, telefone).', false);
+        return;
+      }
+
+      btn.disabled = true;
+      setStatus('Enviando… aguarde.');
+
+      try {
+        const id = crypto.randomUUID();
+
+        // 1) Upload da assinatura (PNG) no Storage
+        const pngDataUrl = canvas.toDataURL('image/png');
+        const blob = await dataURLToBlob(pngDataUrl);
+        const filePath = `${id}.png`;
+
+        const { error: upErr } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(filePath, blob, { contentType: 'image/png', upsert: false });
+        if (upErr) throw upErr;
+
+        const { data: publicURLData } = supabase.storage
+          .from(STORAGE_BUCKET)
+          .getPublicUrl(filePath); // bucket é privado; usamos apenas a URL assinada em contexto interno, mas guardar o path basta.
+
+        // 2) Insert na tabela
+        const payload = {
+          id, // opcional: deixar supabase gerar
+          nome: data.nome,
+          cpf: data.cpf,
+          rg: data.rg || null,
+          data_nascimento: data.data_nascimento || null,
+          email: data.email,
+          telefone: data.telefone,
+          emergencia_nome: data.emergencia_nome || null,
+          emergencia_telefone: data.emergencia_telefone || null,
+          condicoes_saude: data.condicoes_saude || null,
+          medicamentos: data.medicamentos || null,
+          alergias: data.alergias || null,
+          cerimonia_data: data.cerimonia_data || null,
+          cerimonia_local: data.cerimonia_local || null,
+          aceitou_termo: !!data.aceitou_termo,
+          consentiu_lgpd: !!data.consentiu_lgpd,
+          assinatura_url: filePath // guardamos o caminho no bucket
+        };
+
+        const { error: insErr } = await supabase
+          .from('termos_assinados')
+          .insert(payload);
+        if (insErr) throw insErr;
+
+        setStatus('Assinado e enviado com sucesso! Obrigado(a).');
+        form.reset();
+        clearSignature();
+      } catch (err) {
+        console.error(err);
+        setStatus('Falha ao enviar. Verifique a conexão e as políticas do Supabase.', false);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
