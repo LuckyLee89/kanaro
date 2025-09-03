@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Início — Assinatura do Termo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/imask"></script>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <main class="max-w-md mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">Consultar CPF</h1>
+    <p class="text-sm text-gray-600 mb-4">Digite seu CPF para verificar seu cadastro e assinatura.</p>
+
+    <label class="block text-sm font-medium">CPF</label>
+    <input id="cpf" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2" placeholder="000.000.000-00" />
+    <button id="consultar" class="mt-4 w-full rounded-xl bg-black text-white px-4 py-2 font-semibold">Continuar</button>
+
+    <p id="msg" class="mt-3 text-sm"></p>
+  </main>
+
+  <script>
+    const cpfEl = document.getElementById('cpf');
+    IMask(cpfEl, { mask: '000.000.000-00' });
+
+    const FN_URL = 'https://<PROJECT-REF>.functions.supabase.co/lookup_cpf'; // troque
+
+    document.getElementById('consultar').addEventListener('click', async () => {
+      const cpfDigits = cpfEl.value.replace(/\D/g,'');
+      if (cpfDigits.length !== 11) {
+        document.getElementById('msg').textContent = 'CPF inválido.';
+        document.getElementById('msg').className = 'mt-3 text-sm text-rose-700';
+        return;
+      }
+      document.getElementById('msg').textContent = 'Verificando…';
+      document.getElementById('msg').className = 'mt-3 text-sm text-gray-600';
+
+      try {
+        const r = await fetch(FN_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ cpf: cpfDigits })
+        });
+        const j = await r.json();
+        if (j.status === 'SIGNED') {
+          window.location.href = 'ja-assinou.html';
+        } else if (j.status === 'REGISTERED_NOT_SIGNED') {
+          // passa dados por sessionStorage (mais simples) e vai pro form
+          sessionStorage.setItem('prefill', JSON.stringify(j.data));
+          window.location.href = 'form.html';
+        } else {
+          // NEW: só passa o cpf para pré-preencher o campo
+          sessionStorage.setItem('prefill', JSON.stringify({ cpf: cpfDigits }));
+          window.location.href = 'form.html';
+        }
+      } catch (e) {
+        document.getElementById('msg').textContent = 'Erro ao consultar. Tente novamente.';
+        document.getElementById('msg').className = 'mt-3 text-sm text-rose-700';
+      }
+    });
+  </script>
+</body>
+</html>
