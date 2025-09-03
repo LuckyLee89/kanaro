@@ -27,62 +27,65 @@ document.addEventListener('DOMContentLoaded', () => {
   if (telInput)  IMask(telInput,  { mask: '(00) 00000-0000' });
   if (eTelInput) IMask(eTelInput, { mask: '(00) 00000-0000' });
 
-  // === PREFILL (executa cedo! antes do submit)
+  // util pra setar valor respeitando IMask quando existir
+  const setWithMask = (name, val) => {
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el || (val === undefined || val === null || val === '')) return;
+
+    // se tiver IMask, alimentar via typedValue
+    if (el._imask) {
+      let raw = String(val);
+      if (name === 'cpf') raw = raw.replace(/\D/g, '');                         // só dígitos
+      if (name === 'telefone' || name === 'emergencia_telefone') raw = raw.replace(/\D/g, '');
+      if (name === 'rg') raw = raw.replace(/[^0-9xX]/g, '').toUpperCase();       // 0-9 + X
+      el._imask.typedValue = raw;
+    } else {
+      el.value = val;
+    }
+  };
+
+  // ---------------- PREFILL (executa cedo) ----------------
   try {
     const pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
     if (pre) {
-      const set = (name, val) => {
-        const el = document.querySelector(`[name="${name}"]`);
-        if (el && (val || val === 0)) {
-          if (el._imask) {
-            // força a máscara aplicar
-            el._imask.typedValue = val;
-          } else {
-            el.value = val;
-          }
-        }
-      };
-  
-      set('cpf', pre.cpf);
-      set('nome', pre.nome);
-      set('rg', pre.rg);
-      set('data_nascimento', pre.data_nascimento);
-      set('email', pre.email);
-      set('telefone', pre.telefone);
-      set('emergencia_nome', pre.emergencia_nome);
-      set('emergencia_telefone', pre.emergencia_telefone);
-      set('condicoes_saude', pre.condicoes_saude);
-      set('medicamentos', pre.medicamentos);
-      set('alergias', pre.alergias);
-  
-      // garante formato da data no <input type="date">
+      setWithMask('cpf', pre.cpf);
+      setWithMask('nome', pre.nome);
+      setWithMask('rg', pre.rg);
+      setWithMask('data_nascimento', pre.data_nascimento);
+      setWithMask('email', pre.email);
+      setWithMask('telefone', pre.telefone);
+      setWithMask('emergencia_nome', pre.emergencia_nome);
+      setWithMask('emergencia_telefone', pre.emergencia_telefone);
+      setWithMask('condicoes_saude', pre.condicoes_saude);
+      setWithMask('medicamentos', pre.medicamentos);
+      setWithMask('alergias', pre.alergias);
+
+      // <input type="date"> espera yyyy-mm-dd
       let d = pre.cerimonia_data || '';
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
         const [dd, mm, yyyy] = d.split('/');
         d = `${yyyy}-${mm}-${dd}`;
       }
-      set('cerimonia_data', d);
-      set('cerimonia_local', pre.cerimonia_local || '');
+      setWithMask('cerimonia_data', d);
+      setWithMask('cerimonia_local', pre.cerimonia_local || '');
     }
   } catch (e) {
     console.warn('Prefill inválido', e);
   }
 
-  
-  
-    // ---------------- Supabase ----------------
-    const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-    const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI'; // use a sua
-    const STORAGE_BUCKET = 'assinaturas';
-  
-    let supabase = null;
-    try {
-      if (window.supabase?.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-    } catch (e) {
-      console.error('Erro ao iniciar Supabase:', e);
+  // ---------------- Supabase ----------------
+  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
+  const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI'; // <<< coloque a sua anon key
+  const STORAGE_BUCKET = 'assinaturas';
+
+  let supabase = null;
+  try {
+    if (window.supabase?.createClient) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
+  } catch (e) {
+    console.error('Erro ao iniciar Supabase:', e);
+  }
 
   // ---------------- elementos do form ----------------
   const form     = document.getElementById('termoForm');
@@ -333,4 +336,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
