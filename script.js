@@ -147,7 +147,7 @@ if (emergTelInput) {
   function drawTyped(name) {
     if (!name) return;
     sizeCanvasToCSS();
-    const size = Math.max(24, Math.floor(canvas.height * 0.5));
+    const size = Math.max(20, Math.floor(canvas.height * 0.3));
     const fontStack = `"Pacifico", "Allura", cursive`;
     const drawNow = () => {
       ctx.fillStyle = '#111827';
