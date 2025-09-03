@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // status + ano
+  // ---------------- status + ano ----------------
   const statusEl = document.getElementById('status');
   const setStatus = (msg, ok = true) => {
     if (!statusEl) return;
@@ -9,20 +9,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // máscaras
+  // ---------------- máscaras ----------------
   const cpfInput  = document.querySelector('input[name="cpf"]');
   const rgInput   = document.querySelector('input[name="rg"]');
   const telInput  = document.querySelector('input[name="telefone"]');
   const eTelInput = document.querySelector('input[name="emergencia_telefone"]');
+
   if (cpfInput) IMask(cpfInput, { mask: '000.000.000-00' });
   if (rgInput) {
     if (rgInput._imask) rgInput._imask.destroy();
-    IMask(rgInput, { mask: '00.000.000-A', definitions: { 'A': /[0-9Xx]/ }, prepare: s => s.toUpperCase() });
+    IMask(rgInput, {
+      mask: '00.000.000-A',
+      definitions: { 'A': /[0-9Xx]/ },
+      prepare: s => s.toUpperCase()
+    });
   }
   if (telInput)  IMask(telInput,  { mask: '(00) 00000-0000' });
   if (eTelInput) IMask(eTelInput, { mask: '(00) 00000-0000' });
 
-  // === PREFILL (executa cedo!)
+  // ---------------- PREFILL (executa bem cedo) ----------------
   try {
     const pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
     if (pre) {
@@ -31,7 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el != null && (val || val === 0)) el.value = val;
       };
 
-      set('cpf', pre.cpf);                    // IMask formata
+      // CPF: se tem IMask, usa unmaskedValue para formatar
+      if (pre.cpf) {
+        const cpfEl = document.querySelector('input[name="cpf"]');
+        if (cpfEl?._imask) cpfEl._imask.unmaskedValue = pre.cpf;
+        else set('cpf', pre.cpf);
+      }
+
       set('nome', pre.nome);
       set('rg', pre.rg);
       set('data_nascimento', pre.data_nascimento); // YYYY-MM-DD
@@ -43,9 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
       set('medicamentos', pre.medicamentos);
       set('alergias', pre.alergias);
 
-      // garante formato da data do <input type="date">
+      // garante formato yyyy-mm-dd no input date
       let d = pre.cerimonia_data || '';
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { // dd/mm/aaaa -> yyyy-mm-dd
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
         const [dd, mm, yyyy] = d.split('/');
         d = `${yyyy}-${mm}-${dd}`;
       }
@@ -56,30 +67,28 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn('Prefill inválido', e);
   }
 
-  // ==== Supabase (igual ao seu)
+  // ---------------- Supabase ----------------
   const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-  const SUPABASE_ANON_KEY = '...sua chave...';
+  const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI'; // use a sua
   const STORAGE_BUCKET = 'assinaturas';
+
   let supabase = null;
   try {
     if (window.supabase?.createClient) {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error('Erro ao iniciar Supabase:', e);
+  }
 
-  // elementos do form (só agora!)
-  const form   = document.getElementById('termoForm');
-  const btn    = document.getElementById('submitBtn');
-  const canvas = document.getElementById('signature');
+  // ---------------- elementos do form ----------------
+  const form     = document.getElementById('termoForm');
+  const btn      = document.getElementById('submitBtn');
+  const canvas   = document.getElementById('signature');
   const clearBtn = document.getElementById('clearSig');
   if (!form || !btn || !canvas || !clearBtn) return;
 
-  // ... (daqui para baixo mantenha exatamente o seu código:
-  // canvas, assinatura digitada, submit, etc.)
-});
-
-
-  // ================= assinatura (canvas) =================
+  // ---------------- assinatura (canvas) ----------------
   const ctx = canvas.getContext('2d');
   let drawing = false;
   let hasSignature = false;
@@ -151,11 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', sizeCanvasToCSS);
   sizeCanvasToCSS();
 
-  // ===== assinatura digitada =====
+  // ---------------- assinatura digitada ----------------
   let sigMode = 'draw';
-  const radios = document.querySelectorAll('input[name="sigMode"]');
-  const typedBox = document.getElementById('typedBox');
-  const typedName = document.getElementById('typedName');
+  const radios     = document.querySelectorAll('input[name="sigMode"]');
+  const typedBox   = document.getElementById('typedBox');
+  const typedName  = document.getElementById('typedName');
   const makeSigBtn = document.getElementById('makeSigBtn');
 
   if (radios.length) {
@@ -169,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function drawTyped(name) {
     if (!name) return;
     sizeCanvasToCSS();
-    const size = Math.max(20, Math.floor(canvas.height * 0.3)); // menor
+    const size = Math.max(20, Math.floor(canvas.height * 0.3));
     const fontStack = `"Pacifico", "Allura", cursive`;
     const drawNow = () => {
       ctx.fillStyle = '#111827';
@@ -193,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ================= helpers =================
+  // ---------------- helpers ----------------
   function formToJSON(el) {
     const fd = new FormData(el);
     const obj = {};
@@ -207,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return await res.blob();
   }
 
-  // ================= SUBMIT =================
+  // ---------------- SUBMIT ----------------
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     setStatus('Validando…');
@@ -226,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const data = formToJSON(form);
-    // CERIMÔNIA é obrigatória, pois o termo vale só para a data
     if (!data.cerimonia_data) {
       setStatus('Informe a data da cerimônia.', false);
       return;
@@ -246,15 +254,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const pngDataUrl = canvas.toDataURL('image/png');
       const blob = await dataURLToBlob(pngDataUrl);
       const filePath = `${id}.png`;
-      const { error: upErr } = await supabase.storage
-        .from(STORAGE_BUCKET)
+
+      const uploadRes = await supabase
+        .storage.from(STORAGE_BUCKET)
         .upload(filePath, blob, { contentType: 'image/png', upsert: false });
-      if (upErr) throw upErr;
+
+      if (uploadRes.error) throw uploadRes.error;
 
       // normaliza CPF para só dígitos
       const cpfDigits = String(data.cpf).replace(/\D/g, '');
-      
-      // upsert no participantes (se já existir CPF, atualiza)
+
+      // upsert no participantes
       const participante = {
         cpf: cpfDigits,
         nome: data.nome,
@@ -268,13 +278,12 @@ document.addEventListener('DOMContentLoaded', () => {
         medicamentos: data.medicamentos || null,
         alergias: data.alergias || null
       };
-      
-      const { error: upErr } = await supabase
+
+      const upsertRes = await supabase
         .from('participantes')
         .upsert(participante, { onConflict: ['cpf'] });
-      
-      if (upErr) throw upErr;
-      
+
+      if (upsertRes.error) throw upsertRes.error;
 
       // insert no termos_assinados
       const payload = {
@@ -290,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         condicoes_saude: data.condicoes_saude || null,
         medicamentos: data.medicamentos || null,
         alergias: data.alergias || null,
-        cerimonia_data: data.cerimonia_data || null, // <- chave do termo
+        cerimonia_data: data.cerimonia_data || null,
         cerimonia_local: data.cerimonia_local || null,
         aceitou_termo: !!data.aceitou_termo,
         consentiu_lgpd: !!data.consentiu_lgpd,
@@ -299,8 +308,11 @@ document.addEventListener('DOMContentLoaded', () => {
         signed_at: new Date().toISOString()
       };
 
-      const { error: insErr } = await supabase.from('termos_assinados').insert(payload);
-      if (insErr) throw insErr;
+      const insertRes = await supabase
+        .from('termos_assinados')
+        .insert(payload);
+
+      if (insertRes.error) throw insertRes.error;
 
       setStatus('Assinado e enviado com sucesso! Redirecionando…');
 
@@ -308,10 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
       form.reset();
       sessionStorage.removeItem('prefill');
       sizeCanvasToCSS();
+      setTimeout(() => { window.location.href = 'sucesso.html'; }, 500);
 
-      setTimeout(() => {
-        window.location.href = 'sucesso.html';
-      }, 500);
     } catch (err) {
       console.error(err);
       setStatus('Falha ao enviar. Verifique conexão, RLS e policies do Supabase.', false);
@@ -320,3 +330,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
