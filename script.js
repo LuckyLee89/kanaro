@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // ==== Supabase (só usado no submit) ====
-  const SUPABASE_URL = 'COLOQUE_AQUI_SUA_SUPABASE_URL';
+  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
   const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';
   const STORAGE_BUCKET = 'assinaturas';
   const supabase = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) || null;
