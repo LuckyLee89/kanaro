@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (telInput)  IMask(telInput,  { mask: '(00) 00000-0000' });
   if (eTelInput) IMask(eTelInput, { mask: '(00) 00000-0000' });
 
-  // PREFILL (executa cedo!)
+  // === PREFILL (executa cedo! antes do submit)
   try {
     const pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
     if (pre) {
@@ -35,26 +35,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.querySelector(`[name="${name}"]`);
         if (el && (val || val === 0)) {
           if (el._imask) {
-            el._imask.typedValue = val; // usa máscara se existir
+            // força a máscara aplicar
+            el._imask.typedValue = val;
           } else {
-            el.value = val;             // fallback normal
+            el.value = val;
           }
         }
       };
   
       set('cpf', pre.cpf);
-      set('telefone', pre.telefone);
-      set('emergencia_telefone', pre.emergencia_telefone);
       set('nome', pre.nome);
       set('rg', pre.rg);
       set('data_nascimento', pre.data_nascimento);
       set('email', pre.email);
+      set('telefone', pre.telefone);
       set('emergencia_nome', pre.emergencia_nome);
+      set('emergencia_telefone', pre.emergencia_telefone);
       set('condicoes_saude', pre.condicoes_saude);
       set('medicamentos', pre.medicamentos);
       set('alergias', pre.alergias);
   
-      // garante formato da data do <input type="date">
+      // garante formato da data no <input type="date">
       let d = pre.cerimonia_data || '';
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
         const [dd, mm, yyyy] = d.split('/');
@@ -66,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch (e) {
     console.warn('Prefill inválido', e);
   }
+
   
   
     // ---------------- Supabase ----------------
