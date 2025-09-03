@@ -8,14 +8,11 @@ if (cpfInput) {
 
 const rgInput = document.querySelector('input[name="rg"]');
 if (rgInput) {
-  IMask(rgInput, { 
-    mask: [
-      { mask: '00.000.000-0' },   // só número
-      { mask: '00.000.000-A' }    // com letra no final
-    ],
-    definitions: {
-      'A': /[0-9XxAa]/
-    }
+  if (rgInput._imask) rgInput._imask.destroy();
+  IMask(rgInput, {
+    mask: '00.000.000-A',            // último caractere é "A"
+    definitions: { 'A': /[0-9Xx]/ }, // pode ser 0-9 ou X/x
+    prepare: s => s.toUpperCase()    // transforma x -> X
   });
 }
 
