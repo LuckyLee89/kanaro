@@ -53,6 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('signature');
   const clearBtn = document.getElementById('clearSig');
 
+  const cpfField = document.querySelector('[name="cpf"]');
+  if (pre?.cpf && cpfField) {
+    cpfField.value = pre.cpf;
+    cpfField.readOnly = true;
+    cpfField.classList.add('bg-gray-100');
+  }
+
   // se não for a página do termo, sai
   if (!form || !btn || !canvas || !clearBtn) return;
 
