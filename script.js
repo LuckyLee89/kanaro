@@ -11,7 +11,6 @@ if (rgInput) {
   IMask(rgInput, { mask: /^[0-9]{0,9}[A-Za-z]?$/ });
 }
 
-
 const telInput = document.querySelector('input[name="telefone"]');
 if (telInput) {
   IMask(telInput, { mask: '(00) 00000-0000' });
