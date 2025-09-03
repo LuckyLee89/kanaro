@@ -23,10 +23,9 @@
   </main>
 
   <script>
-    const cpfEl   = document.getElementById('cpf');
-    const dataEl  = document.getElementById('cerimonia_data');
-    const localEl = document.getElementById('cerimonia_local');
-    const msgEl   = document.getElementById('msg');
+    const cpfEl  = document.getElementById('cpf');
+    const dataEl = document.getElementById('cerimonia_data');
+    const msgEl  = document.getElementById('msg');
 
     IMask(cpfEl, { mask: '000.000.000-00' });
 
@@ -35,17 +34,16 @@
 
     document.getElementById('consultar').addEventListener('click', async () => {
       const cpfDigits = cpfEl.value.replace(/\D/g,'');
-      const cerimonia_data  = (dataEl?.value  || '').trim();   // YYYY-MM-DD
-      const cerimonia_local = (localEl?.value || '').trim();   // opcional
+      const cerimonia_data = (dataEl.value || '').trim(); // YYYY-MM-DD
 
       if (cpfDigits.length !== 11) {
-        msgEl.textContent = 'CPF inválido.'; 
-        msgEl.className = 'mt-3 text-sm text-rose-700'; 
+        msgEl.textContent = 'CPF inválido.';
+        msgEl.className = 'mt-3 text-sm text-rose-700';
         return;
       }
       if (!cerimonia_data) {
-        msgEl.textContent = 'Selecione a data da cerimônia.'; 
-        msgEl.className = 'mt-3 text-sm text-rose-700'; 
+        msgEl.textContent = 'Selecione a data da cerimônia.';
+        msgEl.className = 'mt-3 text-sm text-rose-700';
         return;
       }
 
@@ -61,27 +59,22 @@
         const j = await r.json();
         console.log('lookup_cpf:', j);
 
-        const basePrefill = { cpf: cpfDigits, cerimonia_data };
-        
+        // base para o prefill
+        const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now() };
+
         if (j.status === 'SIGNED_FOR_DATE') {
-          window.location.href = 'ja-assinou.html';
-        } else if (j.status === 'REGISTERED_NOT_SIGNED') {
-          const prefill = { ...j.data, ...basePrefill, _ts: Date.now() };
-          sessionStorage.setItem('prefill', JSON.stringify(prefill));
-          window.location.href = 'termo.html';
-        } else {
-          const prefill = { ...basePrefill, _ts: Date.now() };
-          sessionStorage.setItem('prefill', JSON.stringify(prefill));
-          window.location.href = 'termo.html';
+          // já assinou para esta data
+          window.location.href = new URL('./ja-assinou.html', window.location.href).href;
+          return;
         }
-        // Envia prefill (mantém data/local)
-        const prefill = Object.assign({}, j.data || {}, { 
-          cpf: cpfDigits, 
-          cerimonia_data, 
-          cerimonia_local 
-        });
+
+        // se tiver cadastro, mistura dados; senão, só CPF + data
+        const prefill = j.status === 'REGISTERED_NOT_SIGNED'
+          ? { ...j.data, ...basePrefill }
+          : basePrefill;
+
         sessionStorage.setItem('prefill', JSON.stringify(prefill));
-        window.location.href = 'termo.html';
+        window.location.href = new URL('./termo.html', window.location.href).href;
       } catch (e) {
         console.error(e);
         msgEl.textContent = 'Erro ao consultar. Tente novamente.';
