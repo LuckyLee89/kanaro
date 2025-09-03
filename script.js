@@ -1,77 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // ================= util/status =================
+  // status + ano
   const statusEl = document.getElementById('status');
   const setStatus = (msg, ok = true) => {
     if (!statusEl) return;
     statusEl.textContent = msg;
     statusEl.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-rose-700';
   };
-
-  // ano no rodapé
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // ================= máscaras =================
-  const cpfInput = document.querySelector('input[name="cpf"]');
+  // máscaras
+  const cpfInput  = document.querySelector('input[name="cpf"]');
+  const rgInput   = document.querySelector('input[name="rg"]');
+  const telInput  = document.querySelector('input[name="telefone"]');
+  const eTelInput = document.querySelector('input[name="emergencia_telefone"]');
   if (cpfInput) IMask(cpfInput, { mask: '000.000.000-00' });
-
-  const rgInput = document.querySelector('input[name="rg"]');
   if (rgInput) {
     if (rgInput._imask) rgInput._imask.destroy();
-    IMask(rgInput, {
-      mask: '00.000.000-A',
-      definitions: { 'A': /[0-9Xx]/ },
-      prepare: s => s.toUpperCase()
-    });
+    IMask(rgInput, { mask: '00.000.000-A', definitions: { 'A': /[0-9Xx]/ }, prepare: s => s.toUpperCase() });
   }
+  if (telInput)  IMask(telInput,  { mask: '(00) 00000-0000' });
+  if (eTelInput) IMask(eTelInput, { mask: '(00) 00000-0000' });
 
-  const telInput = document.querySelector('input[name="telefone"]');
-  if (telInput) IMask(telInput, { mask: '(00) 00000-0000' });
-
-  const emergTelInput = document.querySelector('input[name="emergencia_telefone"]');
-  if (emergTelInput) IMask(emergTelInput, { mask: '(00) 00000-0000' });
-
-  // ================= Supabase =================
-  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcm9xcmxyd3R2eWx4ZWNibWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MTczNzAsImV4cCI6MjA3MjQ5MzM3MH0.rVcZSuHJAeC505Mra7oecZtK3ovzUhj-nfamFJ7XRhc';
-  const STORAGE_BUCKET = 'assinaturas';
-  let supabase = null;
-  try {
-    if (window.supabase?.createClient) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } else {
-      console.warn('Supabase SDK não disponível no window.');
-    }
-  } catch (e) {
-    console.error('Erro ao iniciar Supabase:', e);
-    supabase = null;
-  }
-
-  // ================= elementos do form =================
-  const form   = document.getElementById('termoForm');
-  const btn    = document.getElementById('submitBtn');
-  const canvas = document.getElementById('signature');
-  const clearBtn = document.getElementById('clearSig');
-
-  const cpfField = document.querySelector('[name="cpf"]');
-  if (pre?.cpf && cpfField) {
-    cpfField.value = pre.cpf;
-    cpfField.readOnly = true;
-    cpfField.classList.add('bg-gray-100');
-  }
-
-  // se não for a página do termo, sai
-  if (!form || !btn || !canvas || !clearBtn) return;
-
-  // ================= PREFILL do início =================
+  // === PREFILL (executa cedo!)
   try {
     const pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
     if (pre) {
       const set = (name, val) => {
         const el = document.querySelector(`[name="${name}"]`);
-        if (el && (val || val === 0)) el.value = val;
+        if (el != null && (val || val === 0)) el.value = val;
       };
-      set('cpf', pre.cpf);
+
+      set('cpf', pre.cpf);                    // IMask formata
       set('nome', pre.nome);
       set('rg', pre.rg);
       set('data_nascimento', pre.data_nascimento); // YYYY-MM-DD
@@ -82,14 +42,42 @@ document.addEventListener('DOMContentLoaded', () => {
       set('condicoes_saude', pre.condicoes_saude);
       set('medicamentos', pre.medicamentos);
       set('alergias', pre.alergias);
-      // MUITO IMPORTANTE: data/local da cerimônia vindos do início
-      set('cerimonia_data', pre.cerimonia_data);
+
+      // garante formato da data do <input type="date">
+      let d = pre.cerimonia_data || '';
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { // dd/mm/aaaa -> yyyy-mm-dd
+        const [dd, mm, yyyy] = d.split('/');
+        d = `${yyyy}-${mm}-${dd}`;
+      }
+      set('cerimonia_data', d);
       set('cerimonia_local', pre.cerimonia_local || '');
-      console.log('Prefill aplicado:', pre);
     }
   } catch (e) {
-    console.warn('Prefill falhou', e);
+    console.warn('Prefill inválido', e);
   }
+
+  // ==== Supabase (igual ao seu)
+  const SUPABASE_URL = 'https://msroqrlrwtvylxecbmgm.supabase.co';
+  const SUPABASE_ANON_KEY = '...sua chave...';
+  const STORAGE_BUCKET = 'assinaturas';
+  let supabase = null;
+  try {
+    if (window.supabase?.createClient) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch (e) { console.error(e); }
+
+  // elementos do form (só agora!)
+  const form   = document.getElementById('termoForm');
+  const btn    = document.getElementById('submitBtn');
+  const canvas = document.getElementById('signature');
+  const clearBtn = document.getElementById('clearSig');
+  if (!form || !btn || !canvas || !clearBtn) return;
+
+  // ... (daqui para baixo mantenha exatamente o seu código:
+  // canvas, assinatura digitada, submit, etc.)
+});
+
 
   // ================= assinatura (canvas) =================
   const ctx = canvas.getContext('2d');
