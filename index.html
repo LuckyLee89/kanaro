@@ -8,6 +8,8 @@
   <!-- Estilos -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="data:," />
+  <link href="https://fonts.googleapis.com/css2?family=Allura&family=Pacifico&display=swap" rel="stylesheet">
+
   <meta name="color-scheme" content="light dark" />
   <style>
     #signature { touch-action: none; } /* evita scroll enquanto assina */
@@ -131,15 +133,37 @@
 
         <!-- ASSINATURA -->
         <div class="space-y-3">
-          <label class="required block text-sm font-semibold">Assinatura digital</label>
-          <div class="rounded-xl border bg-white p-3">
-            <canvas id="signature" width="800" height="200" class="w-full h-40"></canvas>
+          <label class="required block text-sm font-semibold">Assinatura</label>
+        
+          <!-- Modo de assinatura -->
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="inline-flex items-center gap-2 text-sm">
+              <input type="radio" name="sigMode" value="draw" checked>
+              Desenhar
+            </label>
+            <label class="inline-flex items-center gap-2 text-sm">
+              <input type="radio" name="sigMode" value="type">
+              Digitar nome
+            </label>
+        
+            <!-- Campo para assinatura digitada (aparece só no modo 'type') -->
+            <div id="typedBox" class="hidden flex items-center gap-2">
+              <input id="typedName" placeholder="Digite seu nome completo" class="rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2">
+              <button type="button" id="makeSigBtn" class="px-3 py-2 rounded-lg border">Gerar assinatura</button>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <button type="button" id="clearSig" class="px-3 py-2 rounded-lg border">Limpar</button>
-            <span class="text-xs text-gray-600">Assine com o dedo (celular) ou mouse (computador).</span>
-          </div>
-        </div>
+
+  <!-- Quadro de assinatura -->
+  <div class="rounded-xl border bg-white p-3">
+    <canvas id="signature" width="800" height="200" class="w-full h-40"></canvas>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <button type="button" id="clearSig" class="px-3 py-2 rounded-lg border">Limpar</button>
+    <span class="text-xs text-gray-600">Assine com o dedo/mouse (modo Desenhar) ou gere pela digitação do seu nome.</span>
+  </div>
+</div>
+
 
         <!-- SUBMIT -->
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
