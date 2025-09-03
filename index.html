@@ -28,6 +28,15 @@
     const msgEl  = document.getElementById('msg');
 
     IMask(cpfEl, { mask: '000.000.000-00' });
+    // Pré-preenche a data da cerimônia via query string
+    const params = new URLSearchParams(window.location.search);
+    const dataPredefinida = params.get("data");
+    if (dataPredefinida) {
+      dataEl.value = dataPredefinida;
+      dataEl.readOnly = true;
+    }
+
+
 
     // URL da Edge Function
     const FN_URL = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
