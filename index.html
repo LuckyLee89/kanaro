@@ -61,9 +61,18 @@
         const j = await r.json();
         console.log('lookup_cpf:', j);
 
+        const basePrefill = { cpf: cpfDigits, cerimonia_data };
+        
         if (j.status === 'SIGNED_FOR_DATE') {
           window.location.href = 'ja-assinou.html';
-          return;
+        } else if (j.status === 'REGISTERED_NOT_SIGNED') {
+          const prefill = { ...j.data, ...basePrefill, _ts: Date.now() };
+          sessionStorage.setItem('prefill', JSON.stringify(prefill));
+          window.location.href = 'termo.html';
+        } else {
+          const prefill = { ...basePrefill, _ts: Date.now() };
+          sessionStorage.setItem('prefill', JSON.stringify(prefill));
+          window.location.href = 'termo.html';
         }
 
         // Envia prefill (mantém data/local)
