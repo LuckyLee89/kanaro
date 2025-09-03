@@ -173,8 +173,29 @@
       <p>© <span id="year"></span> — Uso ritual, responsabilidade, cuidado e respeito.</p>
     </footer>
   </main>
+  <script>
+    // Gate: só abre o termo se houver prefill recente do início
+    (function () {
+      try {
+        const raw = sessionStorage.getItem('prefill');
+        if (!raw) return location.replace('inicio.html');
+  
+        const pre = JSON.parse(raw);
+        // validade de 30 minutos para evitar abrir o termo “antigo” em outra aba
+        const maxAgeMs = 30 * 60 * 1000;
+        if (!pre || !pre._ts || (Date.now() - pre._ts) > maxAgeMs) {
+          sessionStorage.removeItem('prefill');
+          return location.replace('inicio.html');
+        }
+      } catch {
+        sessionStorage.removeItem('prefill');
+        location.replace('inicio.html');
+      }
+    })();
+  </script>
 
   <!-- Seu JS externo (coloque SUPABASE_URL e KEY lá) -->
+
   <script src="script.js"></script>
 </body>
 </html>
