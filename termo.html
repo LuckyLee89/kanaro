@@ -174,15 +174,20 @@
     </footer>
   </main>
   <script>
-    // Gate: só abre o termo se houver prefill recente do início
     (function () {
       try {
         const raw = sessionStorage.getItem('prefill');
         if (!raw) return location.replace('index.html');
   
         const pre = JSON.parse(raw);
-        // validade de 30 minutos para evitar abrir o termo “antigo” em outra aba
-        const maxAgeMs = 30 * 60 * 1000;
+  
+        // se veio antigo sem _ts, cria agora para não bloquear
+        if (pre && !pre._ts) {
+          pre._ts = Date.now();
+          sessionStorage.setItem('prefill', JSON.stringify(pre));
+        }
+  
+        const maxAgeMs = 30 * 60 * 1000; // 30 min
         if (!pre || !pre._ts || (Date.now() - pre._ts) > maxAgeMs) {
           sessionStorage.removeItem('prefill');
           return location.replace('index.html');
@@ -193,6 +198,7 @@
       }
     })();
   </script>
+
 
   <!-- Seu JS externo (coloque SUPABASE_URL e KEY lá) -->
 
