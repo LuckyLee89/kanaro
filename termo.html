@@ -173,21 +173,13 @@
       <p>© <span id="year"></span> — Uso ritual, responsabilidade, cuidado e respeito.</p>
     </footer>
   </main>
-  <script>
+    <script>
     (function () {
       try {
         const raw = sessionStorage.getItem('prefill');
         if (!raw) return location.replace('index.html');
-  
         const pre = JSON.parse(raw);
-  
-        // se veio antigo sem _ts, cria agora para não bloquear
-        if (pre && !pre._ts) {
-          pre._ts = Date.now();
-          sessionStorage.setItem('prefill', JSON.stringify(pre));
-        }
-  
-        const maxAgeMs = 30 * 60 * 1000; // 30 min
+        const maxAgeMs = 30 * 60 * 1000;
         if (!pre || !pre._ts || (Date.now() - pre._ts) > maxAgeMs) {
           sessionStorage.removeItem('prefill');
           return location.replace('index.html');
@@ -197,8 +189,7 @@
         location.replace('index.html');
       }
     })();
-  </script>
-
+    </script>
 
   <!-- Seu JS externo (coloque SUPABASE_URL e KEY lá) -->
 
