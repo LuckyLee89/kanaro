@@ -23,45 +23,49 @@
   </main>
 
  <script>
-  const cpfEl = document.getElementById('cpf');
+  const cpfEl  = document.getElementById('cpf');
+  const dataEl = document.getElementById('cerimonia_data');
+  const localEl= document.getElementById('cerimonia_local');
+  const msgEl  = document.getElementById('msg');
+
   IMask(cpfEl, { mask: '000.000.000-00' });
 
-  // ⬇️ TROQUE pelo endereço real da sua função edge
+  // URL da Edge Function
   const FN_URL = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
 
   document.getElementById('consultar').addEventListener('click', async () => {
     const cpfDigits = cpfEl.value.replace(/\D/g,'');
-    const msgEl = document.getElementById('msg');
+    const cerimonia_data = (dataEl.value || '').trim();       // YYYY-MM-DD
+    const cerimonia_local = (localEl.value || '').trim();
 
     if (cpfDigits.length !== 11) {
-      msgEl.textContent = 'CPF inválido.';
-      msgEl.className = 'mt-3 text-sm text-rose-700';
-      return;
+      msgEl.textContent = 'CPF inválido.'; msgEl.className = 'mt-3 text-sm text-rose-700'; return;
+    }
+    if (!cerimonia_data) {
+      msgEl.textContent = 'Selecione a data da cerimônia.'; msgEl.className = 'mt-3 text-sm text-rose-700'; return;
     }
 
-    msgEl.textContent = 'Verificando…';
-    msgEl.className = 'mt-3 text-sm text-gray-600';
+    msgEl.textContent = 'Verificando…'; msgEl.className = 'mt-3 text-sm text-gray-600';
 
     try {
       const r = await fetch(FN_URL, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ cpf: cpfDigits })
+        body: JSON.stringify({ cpf: cpfDigits, cerimonia_data })
       });
       const j = await r.json();
+      console.log('lookup_cpf:', j);
 
-      if (j.status === 'SIGNED') {
-        // já assinou
+      if (j.status === 'SIGNED_FOR_DATE') {
+        // já assinou para esta data
         window.location.href = 'ja-assinou.html';
-      } else if (j.status === 'REGISTERED_NOT_SIGNED') {
-        // tem cadastro → preenche o form
-        sessionStorage.setItem('prefill', JSON.stringify(j.data));
-        window.location.href = 'termo.html';
-      } else {
-        // NEW → só manda o CPF para já aparecer no form
-        sessionStorage.setItem('prefill', JSON.stringify({ cpf: cpfDigits }));
-        window.location.href = 'termo.html';
+        return;
       }
+
+      // vai para o termo, levando prefill + a data/local
+      const prefill = Object.assign({}, j.data || {}, { cpf: cpfDigits, cerimonia_data, cerimonia_local });
+      sessionStorage.setItem('prefill', JSON.stringify(prefill));
+      window.location.href = 'termo.html';   // seu formulário
     } catch (e) {
       console.error(e);
       msgEl.textContent = 'Erro ao consultar. Tente novamente.';
@@ -69,6 +73,7 @@
     }
   });
 </script>
+
 
 </body>
 </html>
