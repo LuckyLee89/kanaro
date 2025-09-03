@@ -1,79 +1,21 @@
-<!--
-Site de assinatura digital — Termo de Responsabilidade (Ayahuasca)
-Autor: você ♡  |  Licença: MIT
-
-INSTRUÇÕES RÁPIDAS
-1) Crie um projeto no Supabase e copie as chaves/anotações:
-   - SUPABASE_URL
-   - SUPABASE_ANON_KEY
-2) No Supabase SQL, crie a tabela e políticas (cole o bloco abaixo):
-
--- TABELA
-create table if not exists public.termos_assinados (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now(),
-  nome text not null,
-  cpf text not null,
-  rg text,
-  data_nascimento date not null,
-  email text not null,
-  telefone text not null,
-  emergencia_nome text,
-  emergencia_telefone text,
-  condicoes_saude text,
-  medicamentos text,
-  alergias text,
-  cerimonia_data date,
-  cerimonia_local text,
-  aceitou_termo boolean not null,
-  consentiu_lgpd boolean not null,
-  assinatura_url text
-);
-
--- RLS + POLÍTICAS
-alter table public.termos_assinados enable row level security;
--- Permitir INSERT anônimo (apenas gravação, sem leitura pública)
-create policy if not exists "insert_anon" on public.termos_assinados
-for insert to anon, authenticated using (true) with check (true);
--- Bloquear SELECT/UPDATE/DELETE de anônimos
-create policy if not exists "deny_select_anon" on public.termos_assinados
-for select to anon using (false);
-create policy if not exists "deny_update_anon" on public.termos_assinados
-for update to anon using (false) with check (false);
-create policy if not exists "deny_delete_anon" on public.termos_assinados
-for delete to anon using (false);
-
--- STORAGE: Bucket privado para assinaturas
--- No Console: Storage > Create bucket: assinaturas (desmarque "Public")
--- Políticas de upload (permite apenas inserir)
--- Obs: ajuste o schema se preciso (normalmente storage está no schema 'storage')
--- GUI: Storage > assinaturas > Policies > New Policy
---   Name: upload_anon  |  Operation: INSERT  |  Roles: anon, authenticated
---   USING: (bucket_id = 'assinaturas')
---   WITH CHECK: (bucket_id = 'assinaturas')
-
-3) Preencha SUPABASE_URL e SUPABASE_ANON_KEY nos campos do script abaixo.
-4) Faça o deploy do arquivo (Vercel/Netlify/GitHub Pages). É só 1 HTML.
-5) Teste o fluxo e valide a gravação no Supabase (tabela e bucket).
-
-DICA: Ative CAPTCHA (Turnstile/ReCAPTCHA) caso queira mitigar spam.
--->
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Termo de Responsabilidade — Uso Ritual da Ayahuasca</title>
+
+  <!-- Estilos -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="icon" href="data:," />
   <meta name="color-scheme" content="light dark" />
   <style>
-    /* Melhorias de escrita no canvas em telas de alta densidade */
-    #signature { touch-action: none; }
+    #signature { touch-action: none; } /* evita scroll enquanto assina */
     .required:after { content: " *"; color: #ef4444; }
   </style>
+
+  <!-- SDK Supabase v2 (carrega ANTES do seu script.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <main class="max-w-4xl mx-auto p-6 md:p-10">
@@ -212,185 +154,7 @@ DICA: Ative CAPTCHA (Turnstile/ReCAPTCHA) caso queira mitigar spam.
     </footer>
   </main>
 
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // ===== CONFIGURE SEU SUPABASE AQUI =====
-    const SUPABASE_URL = 'COLOQUE_AQUI_SUA_SUPABASE_URL';
-    const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_SUA_SUPABASE_ANON_KEY';
-    const STORAGE_BUCKET = 'assinaturas';
-
-    if (SUPABASE_URL.startsWith('COLOQUE') || SUPABASE_ANON_KEY.startsWith('COLOQUE')) {
-      console.warn('Lembre-se de configurar SUPABASE_URL e SUPABASE_ANON_KEY.');
-    }
-
-    const supabase = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // ===== Assinatura (Canvas) =====
-    const canvas = document.getElementById('signature');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-    let hasSignature = false;
-
-    // Ajuste de resolução para telas de alta densidade
-    function resizeCanvasForHiDPI() {
-      const ratio = Math.max(window.devicePixelRatio || 1, 1);
-      const displayWidth = canvas.clientWidth;
-      const displayHeight = canvas.clientHeight;
-      canvas.width = displayWidth * ratio;
-      canvas.height = displayHeight * ratio;
-      ctx.scale(ratio, ratio);
-      clearSignature();
-    }
-
-    function clearSignature() {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-      ctx.strokeStyle = '#111827';
-      ctx.lineWidth = 2;
-      hasSignature = false;
-    }
-
-    window.addEventListener('resize', resizeCanvasForHiDPI);
-    resizeCanvasForHiDPI();
-
-    function pointerPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      return { x, y };
-    }
-
-    function startDraw(e) {
-      e.preventDefault();
-      drawing = true;
-      const { x, y } = pointerPos(e);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    }
-
-    function draw(e) {
-      if (!drawing) return;
-      e.preventDefault();
-      const { x, y } = pointerPos(e);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      hasSignature = true;
-    }
-
-    function endDraw(e) { drawing = false; }
-
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    window.addEventListener('mouseup', endDraw);
-
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', draw, { passive: false });
-    canvas.addEventListener('touchend', endDraw);
-
-    document.getElementById('clearSig').addEventListener('click', clearSignature);
-
-    // ===== Utilidades =====
-    async function dataURLToBlob(dataURL) {
-      const res = await fetch(dataURL);
-      return await res.blob();
-    }
-
-    function setStatus(msg, ok = true) {
-      const el = document.getElementById('status');
-      el.textContent = msg;
-      el.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-rose-700';
-    }
-
-    function formToJSON(form) {
-      const fd = new FormData(form);
-      const obj = {};
-      for (const [k, v] of fd.entries()) obj[k] = v;
-      obj.aceitou_termo = !!fd.get('aceitou_termo');
-      obj.consentiu_lgpd = !!fd.get('consentiu_lgpd');
-      return obj;
-    }
-
-    // ===== SUBMISSÃO =====
-    const form = document.getElementById('termoForm');
-    const btn = document.getElementById('submitBtn');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      setStatus('Validando…');
-
-      if (!supabase) {
-        setStatus('Supabase não configurado. Edite o arquivo e preencha as chaves.', false);
-        return;
-      }
-
-      if (!hasSignature) {
-        setStatus('Por favor, assine no quadro antes de enviar.', false);
-        return;
-      }
-
-      const data = formToJSON(form);
-      if (!data.nome || !data.cpf || !data.data_nascimento || !data.email || !data.telefone) {
-        setStatus('Preencha os campos obrigatórios (nome, CPF, nascimento, e-mail, telefone).', false);
-        return;
-      }
-
-      btn.disabled = true;
-      setStatus('Enviando… aguarde.');
-
-      try {
-        const id = crypto.randomUUID();
-
-        // 1) Upload da assinatura (PNG) no Storage
-        const pngDataUrl = canvas.toDataURL('image/png');
-        const blob = await dataURLToBlob(pngDataUrl);
-        const filePath = `${id}.png`;
-
-        const { error: upErr } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(filePath, blob, { contentType: 'image/png', upsert: false });
-        if (upErr) throw upErr;
-
-        const { data: publicURLData } = supabase.storage
-          .from(STORAGE_BUCKET)
-          .getPublicUrl(filePath); // bucket é privado; usamos apenas a URL assinada em contexto interno, mas guardar o path basta.
-
-        // 2) Insert na tabela
-        const payload = {
-          id, // opcional: deixar supabase gerar
-          nome: data.nome,
-          cpf: data.cpf,
-          rg: data.rg || null,
-          data_nascimento: data.data_nascimento || null,
-          email: data.email,
-          telefone: data.telefone,
-          emergencia_nome: data.emergencia_nome || null,
-          emergencia_telefone: data.emergencia_telefone || null,
-          condicoes_saude: data.condicoes_saude || null,
-          medicamentos: data.medicamentos || null,
-          alergias: data.alergias || null,
-          cerimonia_data: data.cerimonia_data || null,
-          cerimonia_local: data.cerimonia_local || null,
-          aceitou_termo: !!data.aceitou_termo,
-          consentiu_lgpd: !!data.consentiu_lgpd,
-          assinatura_url: filePath // guardamos o caminho no bucket
-        };
-
-        const { error: insErr } = await supabase
-          .from('termos_assinados')
-          .insert(payload);
-        if (insErr) throw insErr;
-
-        setStatus('Assinado e enviado com sucesso! Obrigado(a).');
-        form.reset();
-        clearSignature();
-      } catch (err) {
-        console.error(err);
-        setStatus('Falha ao enviar. Verifique a conexão e as políticas do Supabase.', false);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  </script>
+  <!-- Seu JS externo (coloque SUPABASE_URL e KEY lá) -->
+  <script src="script.js"></script>
 </body>
 </html>
