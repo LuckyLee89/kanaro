@@ -8,7 +8,15 @@ if (cpfInput) {
 
 const rgInput = document.querySelector('input[name="rg"]');
 if (rgInput) {
-  IMask(rgInput, { mask: /^[0-9]{0,9}[A-Za-z]?$/ });
+  IMask(rgInput, { 
+    mask: [
+      { mask: '00.000.000-0' },   // só número
+      { mask: '00.000.000-A' }    // com letra no final
+    ],
+    definitions: {
+      'A': /[0-9XxAa]/
+    }
+  });
 }
 
 const telInput = document.querySelector('input[name="telefone"]');
