@@ -9,40 +9,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // ---------------- máscaras ----------------
+  // 1) CRIA as máscaras guardando a instância (opcional, mas ajuda)
   const cpfInput  = document.querySelector('input[name="cpf"]');
   const rgInput   = document.querySelector('input[name="rg"]');
   const telInput  = document.querySelector('input[name="telefone"]');
   const eTelInput = document.querySelector('input[name="emergencia_telefone"]');
-
-  if (cpfInput) IMask(cpfInput, { mask: '000.000.000-00' });
-  if (rgInput) {
-    if (rgInput._imask) rgInput._imask.destroy();
-    IMask(rgInput, {
-      mask: '00.000.000-A',
-      definitions: { 'A': /[0-9Xx]/ },
-      prepare: s => s.toUpperCase()
-    });
-  }
-  if (telInput)  IMask(telInput,  { mask: '(00) 00000-0000' });
-  if (eTelInput) IMask(eTelInput, { mask: '(00) 00000-0000' });
-
-  // util pra setar valor respeitando IMask quando existir
+  
+  const cpfMask  = cpfInput  ? IMask(cpfInput,  { mask: '000.000.000-00' }) : null;
+  const rgMask   = rgInput   ? IMask(rgInput,   { mask: '00.000.000-A',
+    definitions: { A: /[0-9Xx]/ }, prepare: s => s.toUpperCase() }) : null;
+  const telMask  = telInput  ? IMask(telInput,  { mask: '(00) 00000-0000' }) : null;
+  const eTelMask = eTelInput ? IMask(eTelInput, { mask: '(00) 00000-0000' }) : null;
+  
+  // 2) Helper robusto: funciona com IMask v6/v7
+  const getMask = (el) => (el?.imaskRef || el?._imask || null);
+  
   const setWithMask = (name, val) => {
     const el = document.querySelector(`[name="${name}"]`);
-    if (!el || (val === undefined || val === null || val === '')) return;
-
-    // se tiver IMask, alimentar via typedValue
-    if (el._imask) {
-      let raw = String(val);
-      if (name === 'cpf') raw = raw.replace(/\D/g, '');                         // só dígitos
-      if (name === 'telefone' || name === 'emergencia_telefone') raw = raw.replace(/\D/g, '');
-      if (name === 'rg') raw = raw.replace(/[^0-9xX]/g, '').toUpperCase();       // 0-9 + X
-      el._imask.typedValue = raw;
+    if (!el || val === undefined || val === null || val === '') return;
+  
+    let raw = String(val);
+    if (name === 'cpf') raw = raw.replace(/\D/g, '');
+    if (name === 'telefone' || name === 'emergencia_telefone') raw = raw.replace(/\D/g, '');
+    if (name === 'rg') raw = raw.replace(/[^0-9xX]/g, '').toUpperCase();
+  
+    const m = getMask(el);
+    if (m) {
+      m.typedValue = raw;          // <- aplica a máscara
     } else {
-      el.value = val;
+      el.value = raw;              // fallback
     }
   };
+
 
   // ---------------- PREFILL (executa cedo) ----------------
   try {
