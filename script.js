@@ -227,7 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
         cerimonia_local: data.cerimonia_local || null,
         aceitou_termo: !!data.aceitou_termo,
         consentiu_lgpd: !!data.consentiu_lgpd,
-        signature_type: sigMode
+        signature_type: sigMode,
+        sig: pre?.sig || null 
       };
 
       // 3) chama a função
