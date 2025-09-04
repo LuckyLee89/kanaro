@@ -113,12 +113,17 @@
         return;
       }
 
-      const prefill = j.status === 'REGISTERED_NOT_SIGNED'
-        ? { ...j.data, ...basePrefill }
-        : basePrefill;
-
-      sessionStorage.setItem('prefill', JSON.stringify(prefill));
-      window.location.href = 'termo.html';
+    // base do prefill com timestamp (gate do termo.html)
+    const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now(), sig: sigParam || null };
+    
+    // j.status pode ser: REGISTERED_NOT_SIGNED, SIGNED_FOR_DATE, NOT_FOUND etc.
+    // Se já está assinado, você já redireciona. Caso contrário:
+    const prefill = (j.status === 'REGISTERED_NOT_SIGNED' && j.data)
+      ? { ...j.data, ...basePrefill }   // <--- mantém TODOS os campos vindos do backend
+      : basePrefill;
+    
+    sessionStorage.setItem('prefill', JSON.stringify(prefill));
+    window.location.href = 'termo.html';
     } catch (e) {
       console.error(e);
       msgEl.textContent = 'Erro ao consultar. Tente novamente.';
