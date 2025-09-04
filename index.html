@@ -79,57 +79,42 @@
   loadDatas();
 
   document.getElementById('consultar').addEventListener('click', async () => {
-    const cpfDigits = (cpfEl.value || '').replace(/\D/g,'');
-    const cerimonia_data = (dataEl.value || '').trim(); // YYYY-MM-DD
+  const cpfDigits = (cpfEl.value || '').replace(/\D/g,'');
+  const cerimonia_data = (dataEl.value || '').trim();
 
-    if (cpfDigits.length !== 11) {
-      msgEl.textContent = 'CPF inválido.';
-      msgEl.className = 'mt-3 text-sm text-rose-700';
+  if (cpfDigits.length !== 11) { /* ... */ }
+  if (!cerimonia_data) { /* ... */ }
+
+  msgEl.textContent = 'Verificando…';
+  msgEl.className = 'mt-3 text-sm text-gray-600';
+
+  try {
+    const r = await fetch(FN_LOOKUP, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cpf: cpfDigits, cerimonia_data, sig: sigParam || null })
+    });
+    const j = await r.json();
+
+    if (j.status === 'SIGNED_FOR_DATE') {
+      window.location.href = 'ja-assinou.html';
       return;
     }
-    if (!cerimonia_data) {
-      msgEl.textContent = 'Selecione a data da cerimônia.';
-      msgEl.className = 'mt-3 text-sm text-rose-700';
-      return;
-    }
 
-    msgEl.textContent = 'Verificando…';
-    msgEl.className = 'mt-3 text-sm text-gray-600';
-
-    try {
-      // Se usa validação por link assinado, envie a sig já no lookup (opcional)
-      const r = await fetch(FN_LOOKUP, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ cpf: cpfDigits, cerimonia_data, sig: sigParam || null })
-      });
-      const j = await r.json();
-
-      // base do prefill com timestamp (gate do termo.html)
-      const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now(), sig: sigParam || null };
-
-      if (j.status === 'SIGNED_FOR_DATE') {
-        window.location.href = 'ja-assinou.html';
-        return;
-      }
-
-    // base do prefill com timestamp (gate do termo.html)
     const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now(), sig: sigParam || null };
-    
-    // j.status pode ser: REGISTERED_NOT_SIGNED, SIGNED_FOR_DATE, NOT_FOUND etc.
-    // Se já está assinado, você já redireciona. Caso contrário:
     const prefill = (j.status === 'REGISTERED_NOT_SIGNED' && j.data)
-      ? { ...j.data, ...basePrefill }   // <--- mantém TODOS os campos vindos do backend
+      ? { ...j.data, ...basePrefill }
       : basePrefill;
-    
+
     sessionStorage.setItem('prefill', JSON.stringify(prefill));
     window.location.href = 'termo.html';
-    } catch (e) {
-      console.error(e);
-      msgEl.textContent = 'Erro ao consultar. Tente novamente.';
-      msgEl.className = 'mt-3 text-sm text-rose-700';
-    }
-  });
+  } catch (e) {
+    console.error(e);
+    msgEl.textContent = 'Erro ao consultar. Tente novamente.';
+    msgEl.className = 'mt-3 text-sm text-rose-700';
+  }
+});
+
   </script>
 </body>
 </html>
