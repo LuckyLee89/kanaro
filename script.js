@@ -246,6 +246,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setStatus('Assinado e enviado com sucesso! Redirecionando…');
 
+      await fetch("https://msroqrlrwtvylxecbmgm.functions.supabase.co/notify_signature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: data.nome, email: data.email })
+      });
+
+
       // limpar e redirecionar
       form.reset();
       cpfMask?.updateValue(); telMask?.updateValue(); eTelMask?.updateValue(); rgMask?.updateValue();
