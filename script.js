@@ -56,7 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const [dd, mm, yyyy] = d.split('/');
         d = `${yyyy}-${mm}-${dd}`;
       }
-      setWithMask('cerimonia_data', d);
+      const d = pre.cerimonia_data || '';
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { const [dd, mm, yyyy] = d.split('/'); d = `${yyyy}-${mm}-${dd}`; }
+      
+      document.getElementById('cerimonia_data_display').value = d; // só mostra
+      document.getElementById('cerimonia_data').value = d;         // este vai no FormData
+
       setWithMask('cerimonia_local', pre.cerimonia_local || '');
 
       // garante render sincronizado
