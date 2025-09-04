@@ -90,10 +90,13 @@
 
         <!-- CERIMÔNIA -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium">Data da cerimônia</label>
-            <input type="date" name="cerimonia_data" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
-          </div>
+        <div>
+          <label class="block text-sm font-medium">Data da cerimônia</label>
+          <input id="cerimonia_data_display"
+                 class="mt-1 w-full rounded-xl border-gray-300 bg-gray-100"
+                 readonly />
+          <input type="hidden" name="cerimonia_data" id="cerimonia_data" />
+        </div>
           <div>
             <label class="block text-sm font-medium">Local</label>
             <input name="cerimonia_local" placeholder="Ex.: Espaço Kanarô — Ourinhos/SP" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black" />
