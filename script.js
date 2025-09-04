@@ -34,42 +34,46 @@ document.addEventListener('DOMContentLoaded', () => {
     el.value = v; // sem máscara (email, texto, textarea, date já em yyyy-mm-dd)
   };
 
-  // ---------------- PREFILL (executa cedo) ----------------
-  try {
-    const pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
-    if (pre) {
-      setWithMask('cpf', pre.cpf);
-      setWithMask('nome', pre.nome);
-      setWithMask('rg', pre.rg);
-      setWithMask('data_nascimento', pre.data_nascimento);
-      setWithMask('email', pre.email);
-      setWithMask('telefone', pre.telefone);
-      setWithMask('emergencia_nome', pre.emergencia_nome);
-      setWithMask('emergencia_telefone', pre.emergencia_telefone);
-      setWithMask('condicoes_saude', pre.condicoes_saude);
-      setWithMask('medicamentos', pre.medicamentos);
-      setWithMask('alergias', pre.alergias);
+ // ---------------- PREFILL (executa cedo) ----------------
+let pre = null; // <--- precisa ser visível também no submit
+try {
+  pre = JSON.parse(sessionStorage.getItem('prefill') || 'null');
+  if (pre) {
+    setWithMask('cpf', pre.cpf);
+    setWithMask('nome', pre.nome);
+    setWithMask('rg', pre.rg);
+    setWithMask('data_nascimento', pre.data_nascimento);
+    setWithMask('email', pre.email);
+    setWithMask('telefone', pre.telefone);
+    setWithMask('emergencia_nome', pre.emergencia_nome);
+    setWithMask('emergencia_telefone', pre.emergencia_telefone);
+    setWithMask('condicoes_saude', pre.condicoes_saude);
+    setWithMask('medicamentos', pre.medicamentos);
+    setWithMask('alergias', pre.alergias);
 
-      // <input type="date"> espera yyyy-mm-dd
-      let d = pre.cerimonia_data || '';
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
-        const [dd, mm, yyyy] = d.split('/');
-        d = `${yyyy}-${mm}-${dd}`;
-      }
-      const d = pre.cerimonia_data || '';
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { const [dd, mm, yyyy] = d.split('/'); d = `${yyyy}-${mm}-${dd}`; }
-      
-      document.getElementById('cerimonia_data_display').value = d; // só mostra
-      document.getElementById('cerimonia_data').value = d;         // este vai no FormData
-
-      setWithMask('cerimonia_local', pre.cerimonia_local || '');
-
-      // garante render sincronizado
-      cpfMask?.updateValue(); telMask?.updateValue(); eTelMask?.updateValue(); rgMask?.updateValue();
+    // <input type="date"> espera yyyy-mm-dd
+    let d = pre.cerimonia_data || '';
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+      const [dd, mm, yyyy] = d.split('/');
+      d = `${yyyy}-${mm}-${dd}`;
     }
-  } catch (e) {
-    console.warn('Prefill inválido', e);
+
+    // se você está usando o par (display + hidden), mantenha estes:
+    const displayEl = document.getElementById('cerimonia_data_display');
+    const hiddenEl  = document.getElementById('cerimonia_data');
+    if (displayEl) displayEl.value = d;
+    if (hiddenEl)  hiddenEl.value = d;
+
+    setWithMask('cerimonia_local', pre.cerimonia_local || '');
+
+    // garante render sincronizado
+    cpfMask?.updateValue(); telMask?.updateValue(); eTelMask?.updateValue(); rgMask?.updateValue();
   }
+} catch (e) {
+  console.warn('Prefill inválido', e);
+  pre = null;
+}
+
 
   // ---------------- elementos do form ----------------
   const form     = document.getElementById('termoForm');
