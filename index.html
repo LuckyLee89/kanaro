@@ -23,80 +23,72 @@
   </main>
 
   <script>
-    const cpfEl  = document.getElementById('cpf');
-    const dataEl = document.getElementById('cerimonia_data');
-    const msgEl  = document.getElementById('msg');
+  const cpfEl  = document.getElementById('cpf');
+  const dataEl = document.getElementById('cerimonia_data');
+  const msgEl  = document.getElementById('msg');
 
-    IMask(cpfEl, { mask: '000.000.000-00' });
-    // Pré-preenche a data da cerimônia via query string
-    const params = new URLSearchParams(window.location.search);
-    const params = new URLSearchParams(window.location.search);
-    const dataPredefinida = params.get("data");
-    
-    if (dataPredefinida) {
-      dataEl.value = dataPredefinida;
-      dataEl.readOnly = true; // trava o input
+  // máscara
+  IMask(cpfEl, { mask: '000.000.000-00' });
+
+  // pré-preenche data pela query (?data=YYYY-MM-DD)
+  const params = new URLSearchParams(window.location.search);
+  const dataPredefinida = params.get('data');
+  if (dataPredefinida) {
+    dataEl.value = dataPredefinida;
+    dataEl.readOnly = true; // trava
+  }
+
+  const FN_URL = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
+
+  document.getElementById('consultar').addEventListener('click', async () => {
+    const cpfDigits = (cpfEl.value || '').replace(/\D/g,'');
+    const cerimonia_data = (dataEl.value || '').trim(); // YYYY-MM-DD
+
+    if (cpfDigits.length !== 11) {
+      msgEl.textContent = 'CPF inválido.';
+      msgEl.className = 'mt-3 text-sm text-rose-700';
+      return;
     }
-    
-    // na hora do envio:
-    const cerimonia_data = dataPredefinida || dataEl.value;
-    
+    if (!cerimonia_data) {
+      msgEl.textContent = 'Selecione a data da cerimônia.';
+      msgEl.className = 'mt-3 text-sm text-rose-700';
+      return;
+    }
 
+    msgEl.textContent = 'Verificando…';
+    msgEl.className = 'mt-3 text-sm text-gray-600';
 
+    try {
+      const r = await fetch(FN_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ cpf: cpfDigits, cerimonia_data })
+      });
+      const j = await r.json();
+      console.log('lookup_cpf:', j);
 
-    // URL da Edge Function
-    const FN_URL = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
+      // base do prefill com timestamp (gate do termo.html)
+      const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now() };
 
-    document.getElementById('consultar').addEventListener('click', async () => {
-      const cpfDigits = cpfEl.value.replace(/\D/g,'');
-      const cerimonia_data = (dataEl.value || '').trim(); // YYYY-MM-DD
-
-      if (cpfDigits.length !== 11) {
-        msgEl.textContent = 'CPF inválido.';
-        msgEl.className = 'mt-3 text-sm text-rose-700';
+      if (j.status === 'SIGNED_FOR_DATE') {
+        // já assinou nessa data
+        window.location.href = 'ja-assinou.html';
         return;
       }
-      if (!cerimonia_data) {
-        msgEl.textContent = 'Selecione a data da cerimônia.';
-        msgEl.className = 'mt-3 text-sm text-rose-700';
-        return;
-      }
 
-      msgEl.textContent = 'Verificando…';
-      msgEl.className = 'mt-3 text-sm text-gray-600';
+      const prefill = j.status === 'REGISTERED_NOT_SIGNED'
+        ? { ...j.data, ...basePrefill }
+        : basePrefill;
 
-      try {
-        const r = await fetch(FN_URL, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ cpf: cpfDigits, cerimonia_data })
-        });
-        const j = await r.json();
-        console.log('lookup_cpf:', j);
+      sessionStorage.setItem('prefill', JSON.stringify(prefill));
+      window.location.href = 'termo.html';
+    } catch (e) {
+      console.error(e);
+      msgEl.textContent = 'Erro ao consultar. Tente novamente.';
+      msgEl.className = 'mt-3 text-sm text-rose-700';
+    }
+  });
+</script>
 
-        // base para o prefill
-        const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now() };
-
-         if (j.status === 'SIGNED_FOR_DATE') {
-          window.location.href = 'ja-assinou.html';
-          return;
-        }
-        
-        const prefill = j.status === 'REGISTERED_NOT_SIGNED'
-          ? { ...j.data, ...basePrefill }
-          : basePrefill;
-        
-        sessionStorage.setItem('prefill', JSON.stringify(prefill));
-        window.location.href = 'termo.html';
-
-        sessionStorage.setItem('prefill', JSON.stringify(prefill));
-        window.location.href = new URL('./termo.html', window.location.href).href;
-      } catch (e) {
-        console.error(e);
-        msgEl.textContent = 'Erro ao consultar. Tente novamente.';
-        msgEl.className = 'mt-3 text-sm text-rose-700';
-      }
-    });
-  </script>
 </body>
 </html>
