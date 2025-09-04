@@ -10,7 +10,7 @@
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <main class="max-w-md mx-auto p-6">
     <h1 class="text-2xl text-align-center font-bold mb-4">Confirmar Cerimônia no Kanarô</h1>
-    <p class="text-sm text-gray-600 mb-4">Digite seu CPF e a data da cerimônia.</p>
+    <p class="text-sm text-gray-600 mb-4">Digite seu CPF e selecione a data da cerimônia.</p>
 
     <label class="block text-sm font-medium">CPF</label>
     <input id="cpf" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2" placeholder="000.000.000-00" />
@@ -32,15 +32,51 @@
   // máscara
   IMask(cpfEl, { mask: '000.000.000-00' });
 
-  // pré-preenche data pela query (?data=YYYY-MM-DD)
   const params = new URLSearchParams(window.location.search);
-  const dataPredefinida = params.get('data');
-  if (dataPredefinida) {
-    dataEl.value = dataPredefinida;
-    dataEl.readOnly = true; // trava
-  }
+  const forcedDate = params.get('data');   // ?data=YYYY-MM-DD (opcional)
+  const sigParam   = params.get('sig');    // ?sig=... (opcional, link assinado)
 
-  const FN_URL = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
+  const FN_LOOKUP = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
+  const LIST_URL  = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/list_cerimonias';
+
+  // Carrega as datas ativas
+  async function loadDatas() {
+    dataEl.disabled = true;
+    dataEl.innerHTML = '<option value="">Carregando datas…</option>';
+
+    try {
+      const r = await fetch(LIST_URL);
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Falha ao listar');
+
+      const items = j.items || [];
+      if (!items.length) {
+        dataEl.innerHTML = '<option value="">Sem datas ativas no momento</option>';
+        return;
+      }
+
+      dataEl.innerHTML =
+        '<option value="">Selecione</option>' +
+        items.map(it => {
+          const label = (it.vagas_restantes == null)
+            ? `${it.data}${it.local ? ' — ' + it.local : ''}`
+            : `${it.data}${it.local ? ' — ' + it.local : ''} (${it.vagas_restantes} vagas)`;
+          return `<option value="${it.data}">${label}</option>`;
+        }).join('');
+      dataEl.disabled = false;
+
+      // Se veio ?data=, pré-seleciona SOMENTE se existir na lista
+      if (forcedDate && [...dataEl.options].some(o => o.value === forcedDate)) {
+        dataEl.value = forcedDate;
+        // Se quiser travar a escolha quando link traz data:
+        // dataEl.disabled = true;
+      }
+    } catch (e) {
+      console.error(e);
+      dataEl.innerHTML = '<option value="">Erro ao carregar datas</option>';
+    }
+  }
+  loadDatas();
 
   document.getElementById('consultar').addEventListener('click', async () => {
     const cpfDigits = (cpfEl.value || '').replace(/\D/g,'');
@@ -61,19 +97,18 @@
     msgEl.className = 'mt-3 text-sm text-gray-600';
 
     try {
-      const r = await fetch(FN_URL, {
+      // Se usa validação por link assinado, envie a sig já no lookup (opcional)
+      const r = await fetch(FN_LOOKUP, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ cpf: cpfDigits, cerimonia_data })
+        body: JSON.stringify({ cpf: cpfDigits, cerimonia_data, sig: sigParam || null })
       });
       const j = await r.json();
-      console.log('lookup_cpf:', j);
 
       // base do prefill com timestamp (gate do termo.html)
-      const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now() };
+      const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now(), sig: sigParam || null };
 
       if (j.status === 'SIGNED_FOR_DATE') {
-        // já assinou nessa data
         window.location.href = 'ja-assinou.html';
         return;
       }
@@ -90,7 +125,6 @@
       msgEl.className = 'mt-3 text-sm text-rose-700';
     }
   });
-</script>
-
+  </script>
 </body>
 </html>
