@@ -1,77 +1,47 @@
-# Kanarô — Assinatura de Termo de Consentimento
+# Kanarô — Assinatura Digital de Termo de Consentimento
 
-Front-end estático para **assinatura digital** de termo de responsabilidade/consentimento para cerimônias.  
-Usa **HTML + Tailwind CSS + JavaScript** (sem ANON KEY exposta). Integra-se a **Supabase Edge Functions** para listar datas, checar CPF/participação e registrar a assinatura (PNG base64).
+Sistema web para gerenciamento e assinatura digital de termos de responsabilidade em cerimônias.  
+Permite consulta por CPF, escolha de data da cerimônia, preenchimento de dados pessoais, contato de emergência e assinatura digital (desenho ou nome tipografado).
 
-> **Demo (GitHub Pages):** [https://luckylee89.github.io/kanaro/](https://luckylee89.github.io/kanaro/)  
-> **Repositório:** [https://github.com/LuckyLee89/kanaro](https://github.com/LuckyLee89/kanaro)
+## 🚀 Demonstração
+🔗 [Acesse aqui](https://luckylee89.github.io/kanaro/)
 
----
+## ⚙️ Tecnologias
+- **HTML5** + **TailwindCSS** (via CDN)
+- **JavaScript (ES6)**
+- **IMask.js** para máscaras de CPF, RG e telefone
+- **Canvas API** para assinatura digital
+- **Supabase Edge Functions** para validação e envio dos dados
 
-## ✨ Funcionalidades
+## 📌 Funcionalidades
+- Consulta de participante pelo CPF
+- Listagem dinâmica de cerimônias disponíveis
+- Preenchimento automático de dados (quando já cadastrados ao menos uma vez)
+- Assinatura digital (desenho ou tipografia)
+- Armazenamento e envio seguro para Supabase
 
-- Consulta de **datas ativas** da cerimônia (listar vagas e local).
-- Validação de **CPF + data** para pré-preenchimento ou aviso de “já assinou”.
-- Formulário completo (dados pessoais, saúde, contato de emergência).
-- **Assinatura digital**: desenhar no canvas _ou_ gerar pela digitação do nome.
-- Envio do termo para a Edge Function (**sem expor chaves no cliente**).
-- Telas dedicadas de **sucesso** e **termo já assinado**.
-
----
-
-## 🗂 Estrutura de pastas
-
-```
-kanaro/
-├─ docs/                     # origem do GitHub Pages
-│  ├─ index.html             # início (CPF + escolha de data)
-│  ├─ assets/
-│  │  ├─ css/                # (se usar CSS próprio)
-│  │  └─ js/
-│  │     └─ script.js        # lógica do formulário e assinatura
-│  └─ pages/
-│     ├─ termo.html          # formulário + assinatura
-│     ├─ sucesso.html        # pós-envio ok
-│     └─ ja-assinou.html     # caso já exista assinatura nesse CPF/data
-├─ README.md                 # este arquivo
-```
-
-> No GitHub Pages, em **Settings → Pages**, selecione “Deploy from a branch” e a pasta **`/docs`**.
-
----
-
-## ▶️ Como rodar local
-
-1. Clone o repositório e abra o `docs/index.html` no navegador.  
-   Dica: use um servidor local para evitar bloqueios de CORS de `file://`:
-
+## ▶️ Como rodar localmente
+1. Clone o repositório:
    ```bash
-   cd docs
-   python -m http.server 5173
-   # abra http://localhost:5173
+   git clone git@github.com:LuckyLee89/kanaro.git
+   cd kanaro
    ```
+2. Abra o arquivo `index.html` no navegador (ou use uma extensão de servidor local, como o Live Server do VSCode).
 
-2. Ajuste as constantes de URLs das funções no `index.html` e `docs/assets/js/script.js`.
+## 🔧 Configuração do Supabase (necessário para back-end)
+Para que o sistema funcione além da interface visual, é preciso configurar um projeto no [Supabase](https://supabase.com/):
 
-3. Teste o fluxo:
-   - `/` → informe **CPF** + **data** → continuar.
-   - `/pages/termo.html` → preencha, assine e envie.
-   - Redireciona para `/pages/sucesso.html` se OK.
+1. Crie um projeto no Supabase.
+2. Configure as tabelas necessárias (ex.: `participantes`, `termos`).
+3. Implemente e publique as **Edge Functions**:
+   - `lookup_cpf` → busca participante por CPF
+   - `list_cerimonias` → lista cerimônias ativas
+   - `submit_termo` → recebe e armazena assinatura + dados
+4. Configure as variáveis de ambiente no Supabase para envio de e-mails (SMTP ou Resend).
+5. Atualize as URLs das funções no código (`script.js` e `index.html`).
 
----
+> 💡 Sem essa configuração, o front-end funciona normalmente (formulários, máscaras, assinatura digital), mas o envio e o registro no banco de dados **não acontecem**.
 
-## 🔐 Notas de segurança
-
-- Sem ANON KEY no front; tudo via **Edge Functions**.
-- PNG da assinatura tem **fundo branco** para evitar transparência.
-- `sessionStorage` usado para **prefill** com expiração de 30 min.
-- Inputs mascarados (CPF, RG, telefones) com **IMask**.
-- HTTPS obrigatório (Pages já fornece).
-
----
-
-## 📜 Licença
-
-**MIT License**.
-
----
+## 📄 Licença
+Este projeto está sob a licença MIT.  
+Sinta-se livre para usar, modificar e distribuir.

@@ -49,8 +49,8 @@
       IMask(cpfEl, { mask: '000.000.000-00' });
 
       const params = new URLSearchParams(window.location.search);
-      const forcedDate = params.get('data'); // ?data=YYYY-MM-DD (opcional)
-      const sigParam = params.get('sig'); // ?sig=... (opcional, link assinado)
+      const forcedDate = params.get('data');
+      const sigParam = params.get('sig');
 
       const FN_LOOKUP =
         'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
@@ -112,10 +112,14 @@
           const cerimonia_data = (dataEl.value || '').trim();
 
           if (cpfDigits.length !== 11) {
-            /* ... */
+            msgEl.textContent = 'CPF inválido.';
+            msgEl.className = 'mt-3 text-sm text-rose-700';
+            return;
           }
           if (!cerimonia_data) {
-            /* ... */
+            msgEl.textContent = 'Selecione a data da cerimônia.';
+            msgEl.className = 'mt-3 text-sm text-rose-700';
+            return;
           }
 
           msgEl.textContent = 'Verificando…';
