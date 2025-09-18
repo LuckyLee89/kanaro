@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Termo de Responsabilidade — Uso Ritual da Ayahuasca</title>
+
+    <!-- Estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="data:," />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Allura&family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/imask"></script>
+
+    <meta name="color-scheme" content="light dark" />
+    <style>
+      #signature {
+        touch-action: none;
+      } /* evita scroll enquanto assina */
+      .required:after {
+        content: ' *';
+        color: #ef4444;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gray-50 text-gray-900">
+    <main class="max-w-4xl mx-auto p-6 md:p-10">
+      <header class="mb-6 md:mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold">
+          Termo de Responsabilidade — Uso Ritual da Ayahuasca
+        </h1>
+        <p class="text-sm text-gray-600 mt-2">
+          Preencha seus dados, leia o termo e assine digitalmente para confirmar
+          sua participação consciente e informada.
+        </p>
+      </header>
+
+      <!-- Card -->
+      <section class="bg-white shadow-lg rounded-2xl p-6 md:p-8 space-y-8">
+        <form id="termoForm" class="space-y-8">
+          <!-- DADOS PESSOAIS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="required block text-sm font-medium"
+                >Nome completo</label
+              >
+              <input
+                name="nome"
+                required
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <label class="required block text-sm font-medium">CPF</label>
+              <input
+                name="cpf"
+                required
+                inputmode="numeric"
+                pattern="[0-9.\-]{11,14}"
+                placeholder="000.000.000-00"
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium">RG</label>
+              <input
+                name="rg"
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <label class="required block text-sm font-medium"
+                >Data de nascimento</label
+              >
+              <input
+                type="date"
+                name="data_nascimento"
+                required
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <label class="required block text-sm font-medium">E-mail</label>
+              <input
+                type="email"
+                name="email"
+                required
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <label class="required block text-sm font-medium">Telefone</label>
+              <input
+                name="telefone"
+                required
+                placeholder="(00) 00000-0000"
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+          </div>
+
+          <!-- CONTATO DE EMERGÊNCIA -->
+          <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <legend class="text-sm font-semibold text-gray-700 mb-2">
+              Contato de emergência
+            </legend>
+            <div>
+              <label class="block text-sm font-medium">Nome</label>
+              <input
+                name="emergencia_nome"
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Telefone</label>
+              <input
+                name="emergencia_telefone"
+                placeholder="(00) 00000-0000"
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+          </fieldset>
+
+          <!-- SAÚDE -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-semibold">Informações de saúde</h3>
+            <p class="text-xs text-gray-600">
+              Compartilhe apenas o necessário para sua segurança durante o
+              ritual.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium"
+                  >Condições de saúde relevantes</label
+                >
+                <textarea
+                  name="condicoes_saude"
+                  rows="3"
+                  class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                ></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium"
+                  >Medicamentos em uso</label
+                >
+                <textarea
+                  name="medicamentos"
+                  rows="3"
+                  class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                ></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">Alergias</label>
+                <textarea
+                  name="alergias"
+                  rows="3"
+                  class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- CERIMÔNIA -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium">Data da cerimônia</label>
+              <input
+                id="cerimonia_data_display"
+                class="mt-1 w-full rounded-xl border-gray-300 bg-gray-100"
+                readonly
+              />
+              <input type="hidden" name="cerimonia_data" id="cerimonia_data" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Local</label>
+              <input
+                name="cerimonia_local"
+                placeholder="Ex.: Espaço Kanarô — Ourinhos/SP"
+                class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black"
+              />
+            </div>
+          </div>
+
+          <!-- TERMO (ROLÁVEL) -->
+          <div>
+            <label class="required block text-sm font-semibold mb-2"
+              >Leia com atenção</label
+            >
+            <div
+              class="max-h-64 overflow-y-auto rounded-xl border p-4 text-sm leading-relaxed bg-gray-50"
+              id="termo-texto"
+            >
+              <p>
+                <strong
+                  >Termo de Responsabilidade e Consentimento Informado para Uso
+                  Ritual da Ayahuasca</strong
+                >
+              </p>
+              <p class="mt-3">
+                Eu, <em>participante identificado neste formulário</em>, declaro
+                que participo <strong>voluntariamente</strong> de
+                cerimônia/ritual conduzido por
+                <em>facilitador(a)/organização</em>, ciente de que a Ayahuasca é
+                uma bebida sacramental utilizada em contextos religiosos/rituais
+                no Brasil. Estou ciente de que seus efeitos podem incluir
+                náuseas, vômitos, evacuação, alterações perceptivas, emocionais
+                e de consciência por algumas horas.
+              </p>
+              <p class="mt-3">
+                <strong>Contraindicações e alertas (não exaustivo):</strong> uso
+                de certos medicamentos (especialmente antidepressivos e outras
+                substâncias com ação serotoninérgica), condições cardíacas
+                graves, histórico de psicose, transtorno bipolar em fase
+                maníaca, epilepsia não controlada, glaucoma, gravidez ou
+                lactação. Comprometo-me a informar de forma
+                <strong>verdadeira</strong> minhas condições de saúde e
+                medicamentos em uso, e a seguir as orientações de preparo
+                (dieta, abstinências) e de segurança fornecidas pela
+                organização.
+              </p>
+              <p class="mt-3">
+                <strong>Responsabilidades:</strong> (i) seguirei as instruções
+                da equipe durante todo o ritual; (ii) não dirigirei veículos nem
+                operarei máquinas sob efeito; (iii) comunicarei imediatamente
+                qualquer mal-estar; (iv) autorizo, se necessário, encaminhamento
+                para atendimento médico e contato com meu(a)
+                responsável/emergência.
+              </p>
+              <p class="mt-3">
+                <strong>Privacidade e LGPD:</strong> autorizo o tratamento dos
+                dados pessoais informados neste formulário para fins de
+                organização, segurança e registro da cerimônia, pelo tempo
+                necessário ao cumprimento dessas finalidades. Sei que posso
+                solicitar acesso, correção ou eliminação dos meus dados, salvo
+                hipóteses legais de retenção.
+              </p>
+              <p class="mt-3">
+                <strong>Declaração final:</strong> Li e compreendi as
+                informações acima, tive oportunidade de tirar dúvidas e
+                <strong>consinto</strong> em participar do ritual de forma livre
+                e informada.
+              </p>
+              <p class="mt-3 text-xs text-gray-600">
+                Observação importante: este documento é um <em>modelo</em> e
+                pode exigir adaptações conforme o contexto
+                religioso/organizacional e a legislação aplicável. Considere
+                submetê-lo à análise jurídica.
+              </p>
+            </div>
+            <div class="mt-3 space-y-2">
+              <label class="inline-flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  name="aceitou_termo"
+                  class="mt-1"
+                  required
+                />
+                <span
+                  >Eu li e <strong>aceito</strong> o Termo de Responsabilidade
+                  acima.</span
+                >
+              </label>
+              <label class="inline-flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  name="consentiu_lgpd"
+                  class="mt-1"
+                  required
+                />
+                <span
+                  >Autorizo o tratamento dos meus dados conforme a seção de
+                  <strong>Privacidade e LGPD</strong>.</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <!-- ASSINATURA -->
+          <div class="space-y-3">
+            <label class="required block text-sm font-semibold"
+              >Assinatura</label
+            >
+
+            <!-- Modo de assinatura -->
+            <div class="flex flex-wrap items-center gap-4">
+              <label class="inline-flex items-center gap-2 text-sm">
+                <input type="radio" name="sigMode" value="draw" checked />
+                Desenhar
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm">
+                <input type="radio" name="sigMode" value="type" />
+                Digitar nome
+              </label>
+
+              <!-- Campo para assinatura digitada (aparece só no modo 'type') -->
+              <div id="typedBox" class="hidden flex items-center gap-2">
+                <input
+                  id="typedName"
+                  placeholder="Digite seu nome completo"
+                  class="rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2"
+                />
+                <button
+                  type="button"
+                  id="makeSigBtn"
+                  class="px-3 py-2 rounded-lg border"
+                >
+                  Gerar assinatura
+                </button>
+              </div>
+            </div>
+
+            <!-- Quadro de assinatura -->
+            <div class="rounded-xl border bg-white p-3">
+              <canvas
+                id="signature"
+                class="w-full h-32 rounded border"
+              ></canvas>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                id="clearSig"
+                class="px-3 py-2 rounded-lg border"
+              >
+                Limpar
+              </button>
+              <span class="text-xs text-gray-600"
+                >Assine com o dedo/mouse (modo Desenhar) ou gere pela digitação
+                do seu nome.</span
+              >
+            </div>
+          </div>
+
+          <!-- SUBMIT -->
+          <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <button
+              id="submitBtn"
+              class="inline-flex items-center justify-center rounded-xl bg-black text-white px-5 py-3 font-semibold hover:bg-gray-900 disabled:opacity-50"
+              type="submit"
+            >
+              Enviar e Assinar
+            </button>
+            <p id="status" class="text-sm text-gray-700"></p>
+          </div>
+        </form>
+      </section>
+
+      <footer class="text-center text-xs text-gray-500 mt-8">
+        <p>
+          © <span id="year"></span> — Uso ritual, responsabilidade, cuidado e
+          respeito.
+        </p>
+      </footer>
+    </main>
+    <script>
+      (function () {
+        try {
+          const raw = sessionStorage.getItem('prefill');
+          if (!raw) return location.replace('../index.html');
+          const pre = JSON.parse(raw);
+          const maxAgeMs = 30 * 60 * 1000;
+          if (!pre || !pre._ts || Date.now() - pre._ts > maxAgeMs) {
+            sessionStorage.removeItem('prefill');
+            return location.replace('../index.html');
+          }
+        } catch {
+          sessionStorage.removeItem('prefill');
+          location.replace('../index.html');
+        }
+      })();
+    </script>
+
+    <!-- Seu JS externo (coloque SUPABASE_URL e KEY lá) -->
+
+    <script src="../assets/js/script.js"></script>
+  </body>
+</html>

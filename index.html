@@ -1,120 +1,162 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Início — Assinatura do Termo</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/imask"></script>
-</head>
-<body class="min-h-screen bg-gray-50 text-gray-900">
-  <main class="max-w-md mx-auto p-6">
-    <h1 class="text-2xl text-align-center font-bold mb-4">Confirmar Cerimônia no Kanarô</h1>
-    <p class="text-sm text-gray-600 mb-4">Digite seu CPF e selecione a data da cerimônia.</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Início — Assinatura do Termo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/imask"></script>
+  </head>
+  <body class="min-h-screen bg-gray-50 text-gray-900">
+    <main class="max-w-md mx-auto p-6">
+      <h1 class="text-2xl text-align-center font-bold mb-4">
+        Confirmar Cerimônia no Kanarô
+      </h1>
+      <p class="text-sm text-gray-600 mb-4">
+        Digite seu CPF e selecione a data da cerimônia.
+      </p>
 
-    <label class="block text-sm font-medium">CPF</label>
-    <input id="cpf" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2" placeholder="000.000.000-00" />
+      <label class="block text-sm font-medium">CPF</label>
+      <input
+        id="cpf"
+        class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2"
+        placeholder="000.000.000-00"
+      />
 
-    <label class="block text-sm font-medium mt-4">Data da cerimônia *</label>
-    <select id="cerimonia_data" class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2">
-      <option value="">Carregando datas…</option>
-    </select>
+      <label class="block text-sm font-medium mt-4">Data da cerimônia *</label>
+      <select
+        id="cerimonia_data"
+        class="mt-1 w-full rounded-xl border-gray-300 focus:border-black focus:ring-black px-3 py-2"
+      >
+        <option value="">Carregando datas…</option>
+      </select>
 
-    <button id="consultar" class="mt-4 w-full rounded-xl bg-black text-white px-4 py-2 font-semibold">Continuar</button>
-    <p id="msg" class="mt-3 text-sm"></p>
-  </main>
+      <button
+        id="consultar"
+        class="mt-4 w-full rounded-xl bg-black text-white px-4 py-2 font-semibold"
+      >
+        Continuar
+      </button>
+      <p id="msg" class="mt-3 text-sm"></p>
+    </main>
 
-  <script>
-  const cpfEl  = document.getElementById('cpf');
-  const dataEl = document.getElementById('cerimonia_data');
-  const msgEl  = document.getElementById('msg');
+    <script>
+      const cpfEl = document.getElementById('cpf');
+      const dataEl = document.getElementById('cerimonia_data');
+      const msgEl = document.getElementById('msg');
 
-  // máscara
-  IMask(cpfEl, { mask: '000.000.000-00' });
+      // máscara
+      IMask(cpfEl, { mask: '000.000.000-00' });
 
-  const params = new URLSearchParams(window.location.search);
-  const forcedDate = params.get('data');   // ?data=YYYY-MM-DD (opcional)
-  const sigParam   = params.get('sig');    // ?sig=... (opcional, link assinado)
+      const params = new URLSearchParams(window.location.search);
+      const forcedDate = params.get('data'); // ?data=YYYY-MM-DD (opcional)
+      const sigParam = params.get('sig'); // ?sig=... (opcional, link assinado)
 
-  const FN_LOOKUP = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
-  const LIST_URL  = 'https://msroqrlrwtvylxecbmgm.functions.supabase.co/list_cerimonias';
+      const FN_LOOKUP =
+        'https://msroqrlrwtvylxecbmgm.functions.supabase.co/lookup_cpf';
+      const LIST_URL =
+        'https://msroqrlrwtvylxecbmgm.functions.supabase.co/list_cerimonias';
 
-  // Carrega as datas ativas
-  async function loadDatas() {
-    dataEl.disabled = true;
-    dataEl.innerHTML = '<option value="">Carregando datas…</option>';
+      // Carrega as datas ativas
+      async function loadDatas() {
+        dataEl.disabled = true;
+        dataEl.innerHTML = '<option value="">Carregando datas…</option>';
 
-    try {
-      const r = await fetch(LIST_URL);
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error || 'Falha ao listar');
+        try {
+          const r = await fetch(LIST_URL);
+          const j = await r.json();
+          if (!j.ok) throw new Error(j.error || 'Falha ao listar');
 
-      const items = j.items || [];
-      if (!items.length) {
-        dataEl.innerHTML = '<option value="">Sem datas ativas no momento</option>';
-        return;
+          const items = j.items || [];
+          if (!items.length) {
+            dataEl.innerHTML =
+              '<option value="">Sem datas ativas no momento</option>';
+            return;
+          }
+
+          dataEl.innerHTML =
+            '<option value="">Selecione</option>' +
+            items
+              .map(it => {
+                const label =
+                  it.vagas_restantes == null
+                    ? `${it.data}${it.local ? ' — ' + it.local : ''}`
+                    : `${it.data}${it.local ? ' — ' + it.local : ''} (${
+                        it.vagas_restantes
+                      } vagas)`;
+                return `<option value="${it.data}">${label}</option>`;
+              })
+              .join('');
+          dataEl.disabled = false;
+
+          // Se veio ?data=, pré-seleciona SOMENTE se existir na lista
+          if (
+            forcedDate &&
+            [...dataEl.options].some(o => o.value === forcedDate)
+          ) {
+            dataEl.value = forcedDate;
+            // Se quiser travar a escolha quando link traz data:
+            // dataEl.disabled = true;
+          }
+        } catch (e) {
+          console.error(e);
+          dataEl.innerHTML = '<option value="">Erro ao carregar datas</option>';
+        }
       }
+      loadDatas();
 
-      dataEl.innerHTML =
-        '<option value="">Selecione</option>' +
-        items.map(it => {
-          const label = (it.vagas_restantes == null)
-            ? `${it.data}${it.local ? ' — ' + it.local : ''}`
-            : `${it.data}${it.local ? ' — ' + it.local : ''} (${it.vagas_restantes} vagas)`;
-          return `<option value="${it.data}">${label}</option>`;
-        }).join('');
-      dataEl.disabled = false;
+      document
+        .getElementById('consultar')
+        .addEventListener('click', async () => {
+          const cpfDigits = (cpfEl.value || '').replace(/\D/g, '');
+          const cerimonia_data = (dataEl.value || '').trim();
 
-      // Se veio ?data=, pré-seleciona SOMENTE se existir na lista
-      if (forcedDate && [...dataEl.options].some(o => o.value === forcedDate)) {
-        dataEl.value = forcedDate;
-        // Se quiser travar a escolha quando link traz data:
-        // dataEl.disabled = true;
-      }
-    } catch (e) {
-      console.error(e);
-      dataEl.innerHTML = '<option value="">Erro ao carregar datas</option>';
-    }
-  }
-  loadDatas();
+          if (cpfDigits.length !== 11) {
+            /* ... */
+          }
+          if (!cerimonia_data) {
+            /* ... */
+          }
 
-  document.getElementById('consultar').addEventListener('click', async () => {
-  const cpfDigits = (cpfEl.value || '').replace(/\D/g,'');
-  const cerimonia_data = (dataEl.value || '').trim();
+          msgEl.textContent = 'Verificando…';
+          msgEl.className = 'mt-3 text-sm text-gray-600';
 
-  if (cpfDigits.length !== 11) { /* ... */ }
-  if (!cerimonia_data) { /* ... */ }
+          try {
+            const r = await fetch(FN_LOOKUP, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                cpf: cpfDigits,
+                cerimonia_data,
+                sig: sigParam || null,
+              }),
+            });
+            const j = await r.json();
 
-  msgEl.textContent = 'Verificando…';
-  msgEl.className = 'mt-3 text-sm text-gray-600';
+            if (j.status === 'SIGNED_FOR_DATE') {
+              window.location.href = 'pages/ja-assinou.html';
+              return;
+            }
 
-  try {
-    const r = await fetch(FN_LOOKUP, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ cpf: cpfDigits, cerimonia_data, sig: sigParam || null })
-    });
-    const j = await r.json();
+            const basePrefill = {
+              cpf: cpfDigits,
+              cerimonia_data,
+              _ts: Date.now(),
+              sig: sigParam || null,
+            };
+            const prefill =
+              j.status === 'REGISTERED_NOT_SIGNED' && j.data
+                ? { ...j.data, ...basePrefill }
+                : basePrefill;
 
-    if (j.status === 'SIGNED_FOR_DATE') {
-      window.location.href = 'ja-assinou.html';
-      return;
-    }
-
-    const basePrefill = { cpf: cpfDigits, cerimonia_data, _ts: Date.now(), sig: sigParam || null };
-    const prefill = (j.status === 'REGISTERED_NOT_SIGNED' && j.data)
-      ? { ...j.data, ...basePrefill }
-      : basePrefill;
-
-    sessionStorage.setItem('prefill', JSON.stringify(prefill));
-    window.location.href = 'termo.html';
-  } catch (e) {
-    console.error(e);
-    msgEl.textContent = 'Erro ao consultar. Tente novamente.';
-    msgEl.className = 'mt-3 text-sm text-rose-700';
-  }
-});
-
-  </script>
-</body>
+            sessionStorage.setItem('prefill', JSON.stringify(prefill));
+            window.location.href = 'pages/termo.html';
+          } catch (e) {
+            console.error(e);
+            msgEl.textContent = 'Erro ao consultar. Tente novamente.';
+            msgEl.className = 'mt-3 text-sm text-rose-700';
+          }
+        });
+    </script>
+  </body>
 </html>
